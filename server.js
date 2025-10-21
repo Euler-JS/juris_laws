@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { OpenAI } from 'openai';
-import { PDFDocument } from 'pdf-lib';
+import pdfParse from 'pdf-parse-fork';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,65 +28,14 @@ const openai = new OpenAI({
 // Cache para armazenar textos dos PDFs
 const pdfCache = new Map();
 
-// Função para extrair texto do PDF usando pdf-lib
+// Função para extrair texto do PDF usando pdf-parse-fork
 async function extractTextFromPDF(pdfPath) {
   try {
-    const pdfBytes = fs.readFileSync(pdfPath);
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const pages = pdfDoc.getPages();
-    
-    let text = '';
-    for (let i = 0; i < pages.length; i++) {
-      // pdf-lib não extrai texto diretamente, mas podemos usar outra abordagem
-      text += `[Página ${i + 1}]\n`;
-    }
-    
-    return text;
+    const dataBuffer = fs.readFileSync(pdfPath);
+    const data = await pdfParse(dataBuffer);
+    return data.text;
   } catch (error) {
-    console.error(`Erro ao ler PDF ${pdfPath}:`, error);
-    return '';
-  }
-}
-
-// Função para extrair texto do PDF usando Python (melhor extração)
-async function extractTextWithPython(pdfPath) {
-  return new Promise((resolve, reject) => {
-    const { spawn } = require('child_process');
-    const python = spawn('python3', ['extract_pdf.py', pdfPath]);
-    
-    let output = '';
-    let errorOutput = '';
-    
-    python.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-    
-    python.stderr.on('data', (data) => {
-      errorOutput += data.toString();
-    });
-    
-    python.on('close', (code) => {
-      if (code !== 0) {
-        console.error(`Erro Python: ${errorOutput}`);
-        resolve(''); // Retorna vazio em caso de erro
-      } else {
-        resolve(output);
-      }
-    });
-  });
-}
-
-// Função alternativa usando fs para ler PDFs como texto bruto (fallback)
-function readPDFAsText(pdfPath) {
-  try {
-    const buffer = fs.readFileSync(pdfPath);
-    // Conversão básica - não é ideal mas funciona para alguns PDFs
-    let text = buffer.toString('utf8');
-    // Limpar caracteres não imprimíveis
-    text = text.replace(/[^\x20-\x7E\n]/g, ' ');
-    return text;
-  } catch (error) {
-    console.error(`Erro ao ler PDF ${pdfPath}:`, error);
+    console.error(`Erro ao extrair texto do PDF ${pdfPath}:`, error.message);
     return '';
   }
 }
@@ -100,13 +49,15 @@ async function loadAllPDFs() {
   
   for (const file of files) {
     const filePath = path.join(leisPath, file);
-    const text = readPDFAsText(filePath);
+    const text = await extractTextFromPDF(filePath);
+    
     pdfCache.set(file, {
       name: file,
-      text: text.substring(0, 50000), // Limitar tamanho para não exceder token limit
-      path: filePath
+      text: text,
+      preview: text.substring(0, 500)
     });
-    console.log(`✓ ${file} carregado`);
+    
+    console.log(`✓ ${file} carregado (${text.length} caracteres)`);
   }
   
   console.log('Todos os PDFs foram carregados!');
@@ -125,7 +76,12 @@ app.get('/', (req, res) => {
 
 // Rota para listar todas as leis disponíveis
 app.get('/leis', (req, res) => {
-  const leis = Array.from(pdfCache.keys());
+  const leis = Array.from(pdfCache.entries()).map(([name, data]) => ({
+    nome: name,
+    caracteres: data.text.length,
+    preview: data.preview
+  }));
+  
   res.json({
     total: leis.length,
     leis: leis
@@ -143,20 +99,31 @@ app.post('/perguntar', async (req, res) => {
     
     // Construir contexto com as leis
     let contexto = '';
+    let leisUsadas = [];
     
     if (lei) {
       // Se uma lei específica foi mencionada
       const leiData = pdfCache.get(lei);
       if (leiData) {
-        contexto = `Lei: ${leiData.name}\n\n${leiData.text}`;
+        contexto = `=== ${leiData.name} ===\n${leiData.text}`;
+        leisUsadas.push(lei);
       } else {
         return res.status(404).json({ error: 'Lei não encontrada' });
       }
     } else {
-      // Usar todas as leis (limitado)
+      // Buscar nas leis relevantes baseado em palavras-chave
+      const palavrasChave = pergunta.toLowerCase();
+      let textoTotal = 0;
+      const maxTexto = 100000; // Limitar contexto total
+      
       for (const [name, data] of pdfCache.entries()) {
-        contexto += `\n\n=== ${name} ===\n${data.text.substring(0, 5000)}`;
-        if (contexto.length > 30000) break; // Limitar contexto total
+        if (textoTotal >= maxTexto) break;
+        
+        // Adicionar lei ao contexto
+        const textoLei = data.text.substring(0, 30000);
+        contexto += `\n\n=== ${name} ===\n${textoLei}`;
+        leisUsadas.push(name);
+        textoTotal += textoLei.length;
       }
     }
     
@@ -166,35 +133,33 @@ app.post('/perguntar', async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: `Você é um assistente jurídico especializado em leis de Moçambique. 
+          content: `Você é um assistente jurídico especializado em leis de Moçambique.
 
 REGRAS IMPORTANTES:
-1. Responda APENAS com base no conteúdo das leis fornecidas no contexto
-2. SEMPRE cite o artigo específico e o nome completo da lei (exemplo: "Artigo 50 da Lei da Família")
-3. Se a informação NÃO estiver nos documentos fornecidos, responda: "Não encontrei essa informação nas leis disponíveis"
-4. NÃO invente artigos ou informações
-5. NÃO use conhecimento externo aos documentos
-6. Cite exatamente o que está escrito nos documentos
-7. Se encontrar a informação, transcreva o texto do artigo relevante
+1. Responda APENAS com base no conteúdo das leis fornecidas abaixo
+2. SEMPRE cite o artigo específico e o nome da lei quando responder
+3. Se a informação NÃO estiver nos documentos fornecidos, responda: "Não há resposta segundo as leis fornecidas"
+4. NÃO invente ou assuma informações que não estejam explícitas nos documentos
+5. Use o formato: "Segundo o Artigo X da [Nome da Lei], ..."
+6. Se encontrar múltiplos artigos relevantes, cite todos
 
-Formato de resposta:
-- Nome da Lei: [nome completo da lei]
-- Artigo: [número do artigo]
-- Conteúdo: [texto exato do artigo ou resumo fiel]`
+Leis fornecidas:
+${contexto}`
         },
         {
           role: 'user',
-          content: `Contexto das leis disponíveis:\n${contexto}\n\nPergunta: ${pergunta}`
+          content: pergunta
         }
       ],
-      temperature: 0.1,
+      temperature: 0.1, // Baixa temperatura para respostas mais precisas
       max_tokens: 1500
     });
     
     res.json({
       pergunta,
       resposta: response.choices[0].message.content,
-      lei: lei || 'Todas as leis',
+      leisConsultadas: leisUsadas,
+      totalLeis: leisUsadas.length,
       modelo: 'gpt-4o-mini'
     });
     
@@ -207,6 +172,22 @@ Formato de resposta:
   }
 });
 
+// Rota para buscar lei específica
+app.get('/lei/:nome', (req, res) => {
+  const { nome } = req.params;
+  const leiData = pdfCache.get(nome);
+  
+  if (!leiData) {
+    return res.status(404).json({ error: 'Lei não encontrada' });
+  }
+  
+  res.json({
+    nome: leiData.name,
+    texto: leiData.text,
+    caracteres: leiData.text.length
+  });
+});
+
 // Inicializar servidor
 async function start() {
   await loadAllPDFs();
@@ -214,7 +195,8 @@ async function start() {
   app.listen(PORT, () => {
     console.log(`\n🚀 Servidor rodando em http://localhost:${PORT}`);
     console.log(`📚 ${pdfCache.size} leis carregadas`);
-    console.log(`\nExemplo de uso:`);
+    console.log(`\n💡 Acesse http://localhost:${PORT} no navegador`);
+    console.log(`\nExemplo de uso via API:`);
     console.log(`curl -X POST http://localhost:${PORT}/perguntar \\`);
     console.log(`  -H "Content-Type: application/json" \\`);
     console.log(`  -d '{"pergunta": "O que diz a lei sobre casamento?"}'`);
