@@ -1,0 +1,11 @@
+{
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "openai": "^6.6.0",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse-fork": "^1.2.0"
+  }
+}
