@@ -185,6 +185,17 @@
         
         <div class="content">
             <div class="input-group">
+                <label for="metodo">Método de Busca:</label>
+                <select id="metodo">
+                    <option value="rag">🔍 RAG - Busca Inteligente (Recomendado)</option>
+                    <option value="tradicional">📄 Tradicional - Todas as Leis</option>
+                </select>
+                <div class="leis-list">
+                    <small>RAG busca apenas trechos relevantes usando IA</small>
+                </div>
+            </div>
+            
+            <div class="input-group">
                 <label for="lei">Lei Específica (opcional):</label>
                 <select id="lei">
                     <option value="">Todas as leis</option>
@@ -246,6 +257,7 @@
         async function fazerPergunta() {
             const pergunta = document.getElementById('pergunta').value.trim();
             const lei = document.getElementById('lei').value;
+            const metodo = document.getElementById('metodo').value;
             
             if (!pergunta) {
                 alert('Por favor, digite uma pergunta');
@@ -262,18 +274,32 @@
             response.classList.remove('show');
             
             try {
-                const res = await fetch(`${API_URL}/perguntar`, {
+                const endpoint = metodo === 'rag' ? '/perguntar-rag' : '/perguntar';
+                const body = metodo === 'rag' 
+                    ? { pergunta, topK: 5 }
+                    : { pergunta, lei };
+                
+                const res = await fetch(`${API_URL}${endpoint}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ pergunta, lei })
+                    body: JSON.stringify(body)
                 });
                 
                 const data = await res.json();
                 
                 if (res.ok) {
-                    document.getElementById('responseText').textContent = data.resposta;
+                    let respostaTexto = data.resposta;
+                    
+                    // Adicionar informações extras se for RAG
+                    if (metodo === 'rag' && data.detalhesChunks) {
+                        respostaTexto += '\n\n---\n📊 Informações da busca:\n';
+                        respostaTexto += `• ${data.chunksEncontrados} trechos relevantes encontrados\n`;
+                        respostaTexto += `• Leis consultadas: ${data.leisConsultadas.join(', ')}\n`;
+                    }
+                    
+                    document.getElementById('responseText').textContent = respostaTexto;
                     response.classList.remove('error');
                     response.classList.add('show');
                 } else {

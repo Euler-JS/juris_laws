@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { OpenAI } from 'openai';
 import pdfParse from 'pdf-parse-fork';
+import { SimpleRAG } from './simple-rag.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +25,9 @@ app.use(express.static('public'));
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
+
+// Sistema RAG
+const ragSystem = new SimpleRAG(process.env.OPENAI_API_KEY);
 
 // Cache para armazenar textos dos PDFs
 const pdfCache = new Map();
@@ -69,7 +73,9 @@ app.get('/', (req, res) => {
     message: 'API de Consulta de Leis Moçambicanas',
     endpoints: {
       '/leis': 'Lista todas as leis disponíveis',
-      '/perguntar': 'POST - Faz uma pergunta sobre as leis'
+      '/perguntar': 'POST - Faz uma pergunta sobre as leis (método antigo)',
+      '/perguntar-rag': 'POST - Faz uma pergunta usando RAG (recomendado)',
+      '/rag/stats': 'Estatísticas do sistema RAG'
     }
   });
 });
@@ -188,18 +194,121 @@ app.get('/lei/:nome', (req, res) => {
   });
 });
 
+// ============ NOVOS ENDPOINTS RAG ============
+
+// Rota para perguntas usando RAG
+app.post('/perguntar-rag', async (req, res) => {
+  try {
+    const { pergunta, topK = 5 } = req.body;
+    
+    if (!pergunta) {
+      return res.status(400).json({ error: 'Pergunta é obrigatória' });
+    }
+
+    // 1. Buscar chunks relevantes usando RAG
+    const results = await ragSystem.search(pergunta, topK);
+    
+    if (results.length === 0) {
+      return res.json({
+        pergunta,
+        resposta: 'Não encontrei informações relevantes nas leis fornecidas.',
+        chunksEncontrados: 0
+      });
+    }
+
+    // 2. Construir contexto com os chunks encontrados
+    const contexto = results
+      .map((r, i) => `[Chunk ${i + 1} - ${r.lei} - Similaridade: ${(r.similarity * 100).toFixed(1)}%]\n${r.text}`)
+      .join('\n\n---\n\n');
+
+    const leisEncontradas = [...new Set(results.map(r => r.lei))];
+
+    // 3. Enviar ao GPT
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `Você é um assistente jurídico especializado em leis de Moçambique.
+
+REGRAS IMPORTANTES:
+1. Responda APENAS com base nos trechos (chunks) das leis fornecidos abaixo
+2. SEMPRE cite o artigo específico e o nome da lei quando responder
+3. Se a informação NÃO estiver nos trechos fornecidos, responda: "Não há informação suficiente nos trechos fornecidos"
+4. NÃO invente ou assuma informações que não estejam explícitas nos trechos
+5. Use o formato: "Segundo o Artigo X da [Nome da Lei], ..."
+6. Os trechos foram selecionados automaticamente como os mais relevantes para a pergunta
+
+Trechos relevantes das leis:
+${contexto}`
+        },
+        {
+          role: 'user',
+          content: pergunta
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 2000
+    });
+
+    res.json({
+      pergunta,
+      resposta: response.choices[0].message.content,
+      chunksEncontrados: results.length,
+      leisConsultadas: leisEncontradas,
+      detalhesChunks: results.map(r => ({
+        lei: r.lei,
+        similaridade: `${(r.similarity * 100).toFixed(1)}%`,
+        preview: r.text.substring(0, 150) + '...'
+      })),
+      modelo: 'gpt-4o-mini',
+      metodo: 'RAG'
+    });
+
+  } catch (error) {
+    console.error('Erro ao processar pergunta RAG:', error);
+    res.status(500).json({
+      error: 'Erro ao processar pergunta',
+      details: error.message
+    });
+  }
+});
+
+// Estatísticas do RAG
+app.get('/rag/stats', async (req, res) => {
+  try {
+    const stats = await ragSystem.getStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Inicializar servidor
 async function start() {
+  console.log('🚀 Iniciando servidor...\n');
+  
+  // 1. Carregar PDFs
   await loadAllPDFs();
+  
+  // 2. Indexar RAG
+  await ragSystem.indexAllLaws(pdfCache);
+  
+  const stats = ragSystem.getStats();
   
   app.listen(PORT, () => {
     console.log(`\n🚀 Servidor rodando em http://localhost:${PORT}`);
     console.log(`📚 ${pdfCache.size} leis carregadas`);
+    console.log(`🔍 ${stats.totalChunks} chunks indexados no RAG`);
     console.log(`\n💡 Acesse http://localhost:${PORT} no navegador`);
-    console.log(`\nExemplo de uso via API:`);
-    console.log(`curl -X POST http://localhost:${PORT}/perguntar \\`);
+    console.log(`\n📖 Endpoints disponíveis:`);
+    console.log(`  • POST /perguntar     - Método antigo (envia todas leis)`);
+    console.log(`  • POST /perguntar-rag - Método RAG (busca inteligente) ⭐`);
+    console.log(`  • GET  /rag/stats     - Estatísticas do RAG`);
+    console.log(`\nExemplo RAG:`);
+    console.log(`curl -X POST http://localhost:${PORT}/perguntar-rag \\`);
     console.log(`  -H "Content-Type: application/json" \\`);
-    console.log(`  -d '{"pergunta": "O que diz a lei sobre casamento?"}'`);
+    console.log(`  -d '{"pergunta": "O que diz a lei de terras?"}'`);
   });
 }
 
