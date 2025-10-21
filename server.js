@@ -9,6 +9,7 @@ import pdfParse from 'pdf-parse-fork';
 import { SimpleRAG } from './simple-rag.js';
 import { IntentClassifier } from './classifier.js';
 import { AssistanceGenerator } from './assistance-generator.js';
+import { LegalGlossary } from './glossary.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +35,9 @@ const ragSystem = new SimpleRAG(process.env.OPENAI_API_KEY);
 // Classificador de Intenção e Gerador de Assistência
 const classifier = new IntentClassifier(process.env.OPENAI_API_KEY);
 const assistanceGenerator = new AssistanceGenerator(process.env.OPENAI_API_KEY);
+
+// Sistema de Glossário Jurídico
+const glossary = new LegalGlossary(process.env.OPENAI_API_KEY);
 
 // Cache para armazenar textos dos PDFs
 const pdfCache = new Map();
@@ -216,16 +220,22 @@ app.post('/perguntar-rag', async (req, res) => {
     console.log(`${'='.repeat(70)}`);
     console.log(`"${pergunta}"\n`);
 
-    // FASE 1: Classificar intenção (Consulta vs Assistência)
+    // FASE 1: Classificar intenção (Consulta vs Assistência vs Glossário)
     console.log('🎯 FASE 1: Classificando intenção...');
     const classification = await classifier.classify(pergunta);
     
     // FASE 2: Buscar chunks mais relevantes no RAG
     const numChunks = topK || (classification.modo === 'assistencia' ? 7 : 5);
     console.log(`\n🔍 FASE 2: Buscando ${numChunks} chunks mais relevantes...`);
-    const relevantChunks = await ragSystem.search(pergunta, numChunks);
     
-    if (relevantChunks.length === 0) {
+    // Para glossário, buscar pelo termo específico
+    const searchQuery = classification.modo === 'glossario' && classification.termo_glossario
+      ? classification.termo_glossario
+      : pergunta;
+    
+    const relevantChunks = await ragSystem.search(searchQuery, numChunks);
+    
+    if (relevantChunks.length === 0 && classification.modo !== 'glossario') {
       return res.json({
         modo: classification.modo,
         resposta: 'Não encontrei informações relevantes nas leis disponíveis para responder sua pergunta.',
@@ -242,7 +252,29 @@ app.post('/perguntar-rag', async (req, res) => {
     let resultado;
 
     // FASE 3: Gerar resposta apropriada com base no modo
-    if (classification.modo === 'assistencia') {
+    if (classification.modo === 'glossario') {
+      console.log(`\n📖 FASE 3: Gerando EXPLICAÇÃO DE GLOSSÁRIO...`);
+      console.log(`   Termo: "${classification.termo_glossario}"`);
+      
+      // Gerar explicação do termo
+      const explicacao = await glossary.explainTerm(
+        classification.termo_glossario,
+        relevantChunks,
+        { pergunta }
+      );
+      
+      resultado = {
+        modo: 'glossario',
+        resposta: explicacao.explicacao,
+        metadata: {
+          termo: explicacao.termo,
+          categoria: explicacao.categoria,
+          nivel_dificuldade: explicacao.nivel_dificuldade,
+          leis_usadas: explicacao.leis_consultadas
+        }
+      };
+      
+    } else if (classification.modo === 'assistencia') {
       console.log(`\n💙 FASE 3: Gerando ASSISTÊNCIA PESSOAL...`);
       
       // Extrair fatos da situação
@@ -256,6 +288,12 @@ app.post('/perguntar-rag', async (req, res) => {
         relevantChunks
       );
       
+      // Detectar termos técnicos na resposta para sugestões
+      const termosSugeridos = glossary.suggestExplanations(resultado.resposta);
+      if (termosSugeridos.length > 0) {
+        resultado.termos_tecnicos = termosSugeridos;
+      }
+      
     } else {
       console.log(`\n📚 FASE 3: Gerando CONSULTA TÉCNICA...`);
       
@@ -264,6 +302,12 @@ app.post('/perguntar-rag', async (req, res) => {
         pergunta,
         relevantChunks
       );
+      
+      // Detectar termos técnicos na resposta para sugestões
+      const termosSugeridos = glossary.suggestExplanations(resultado.resposta);
+      if (termosSugeridos.length > 0) {
+        resultado.termos_tecnicos = termosSugeridos;
+      }
     }
 
     console.log(`\n✅ Resposta gerada com sucesso!`);
@@ -305,6 +349,50 @@ app.get('/rag/stats', async (req, res) => {
   }
 });
 
+// Estatísticas do Glossário
+app.get('/glossario/stats', (req, res) => {
+  try {
+    const stats = glossary.getStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint dedicado para glossário (mais rápido)
+app.post('/glossario', async (req, res) => {
+  try {
+    const { termo } = req.body;
+    
+    if (!termo) {
+      return res.status(400).json({ error: 'Termo é obrigatório' });
+    }
+
+    console.log(`\n📖 Explicando termo: "${termo}"`);
+
+    // Buscar chunks relevantes sobre o termo
+    const relevantChunks = await ragSystem.search(termo, 5);
+    
+    // Gerar explicação
+    const explicacao = await glossary.explainTerm(termo, relevantChunks);
+    
+    res.json({
+      termo: explicacao.termo,
+      explicacao: explicacao.explicacao,
+      categoria: explicacao.categoria,
+      nivel_dificuldade: explicacao.nivel_dificuldade,
+      leis_consultadas: explicacao.leis_consultadas
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao explicar termo:', error);
+    res.status(500).json({
+      error: 'Erro ao processar termo',
+      details: error.message
+    });
+  }
+});
+
 // Inicializar servidor
 async function start() {
   console.log('🚀 Iniciando servidor...\n');
@@ -316,6 +404,7 @@ async function start() {
   await ragSystem.indexAllLaws(pdfCache);
   
   const stats = ragSystem.getStats();
+  const glossaryStats = glossary.getStats();
   
   app.listen(PORT, () => {
     console.log(`\n${'='.repeat(70)}`);
@@ -324,25 +413,37 @@ async function start() {
     console.log(`\n📊 Status do Sistema:`);
     console.log(`   ✓ ${pdfCache.size} leis carregadas`);
     console.log(`   ✓ ${stats.totalChunks} chunks indexados no RAG`);
-    console.log(`   ✓ Classificador de intenção ativo`);
-    console.log(`   ✓ Modo Assistência Pessoal ativo`);
-    console.log(`   ✓ Modo Consulta Técnica ativo`);
+    console.log(`   ✓ ${glossaryStats.termos_registrados} termos no glossário`);
+    console.log(`   ✓ Classificador de intenção ativo (3 modos)`);
+    console.log(`   ✓ Modo 1: Consulta Técnica 📚`);
+    console.log(`   ✓ Modo 2: Assistência Pessoal 💙`);
+    console.log(`   ✓ Modo 3: Glossário Jurídico 📖`);
     console.log(`\n🌐 URL: http://localhost:${PORT}`);
     console.log(`\n📖 Endpoints disponíveis:`);
-    console.log(`   • POST /perguntar-rag 🎯 - Sistema Inteligente (2 modos)`);
-    console.log(`        → Detecta automaticamente: Consulta ou Assistência`);
+    console.log(`   • POST /perguntar-rag 🎯 - Sistema Inteligente (3 modos)`);
+    console.log(`        → Detecta automaticamente: Consulta, Assistência ou Glossário`);
+    console.log(`   • POST /glossario     📖 - Explicar termo direto`);
     console.log(`   • POST /perguntar     📚 - Método tradicional`);
-    console.log(`   • GET  /rag/stats     📊 - Estatísticas do sistema`);
+    console.log(`   • GET  /rag/stats     📊 - Estatísticas do RAG`);
+    console.log(`   • GET  /glossario/stats 📖 - Estatísticas do Glossário`);
     console.log(`   • GET  /leis          📋 - Listar todas as leis`);
     console.log(`\n💡 Exemplos de uso:`);
-    console.log(`\n   CONSULTA TÉCNICA:`);
+    console.log(`\n   1️⃣ CONSULTA TÉCNICA:`);
     console.log(`   curl -X POST http://localhost:${PORT}/perguntar-rag \\`);
     console.log(`     -H "Content-Type: application/json" \\`);
-    console.log(`     -d '{"pergunta": "O que diz o artigo 125 da Lei do Trabalho?"}'`);
-    console.log(`\n   ASSISTÊNCIA PESSOAL:`);
+    console.log(`     -d '{"pergunta": "O que diz sobre casamento?"}'`);
+    console.log(`\n   2️⃣ ASSISTÊNCIA PESSOAL:`);
     console.log(`   curl -X POST http://localhost:${PORT}/perguntar-rag \\`);
     console.log(`     -H "Content-Type: application/json" \\`);
-    console.log(`     -d '{"pergunta": "Fui despedido sem aviso. Tenho 3 filhos. O que fazer?"}'`);
+    console.log(`     -d '{"pergunta": "Fui despedido injustamente. O que fazer?"}'`);
+    console.log(`\n   3️⃣ GLOSSÁRIO JURÍDICO:`);
+    console.log(`   curl -X POST http://localhost:${PORT}/perguntar-rag \\`);
+    console.log(`     -H "Content-Type: application/json" \\`);
+    console.log(`     -d '{"pergunta": "O que é usucapião?"}'`);
+    console.log(`\n   OU diretamente:`);
+    console.log(`   curl -X POST http://localhost:${PORT}/glossario \\`);
+    console.log(`     -H "Content-Type: application/json" \\`);
+    console.log(`     -d '{"termo": "regime de bens"}'`);
     console.log(`\n${'='.repeat(70)}\n`);
   });
 }

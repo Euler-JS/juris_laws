@@ -24,6 +24,7 @@ Analise a pergunta do usuário e determine:
 1. MODO (escolha um):
    - "consulta": Usuário quer informação objetiva sobre leis (ex: "O que diz o artigo X?", "Qual a lei sobre Y?")
    - "assistencia": Usuário tem problema pessoal e precisa de ajuda (ex: "Fui despedido...", "Estou sofrendo...", "O que posso fazer?")
+   - "glossario": Usuário quer explicação de um termo jurídico (ex: "O que é usucapião?", "O que significa justa causa?", "Explique regime de bens")
 
 2. ÁREA LEGAL (escolha uma ou mais):
    - direito_trabalho
@@ -54,13 +55,14 @@ Analise a pergunta do usuário e determine:
 
 Responda APENAS em formato JSON válido:
 {
-  "modo": "consulta" ou "assistencia",
+  "modo": "consulta" ou "assistencia" ou "glossario",
   "confianca": 0.0-1.0,
   "area_legal": ["..."],
   "urgencia": "baixa|media|alta",
   "emocao": "neutra|preocupacao|desespero|raiva|confusao",
   "problema": "descrição do problema" ou null,
   "vulnerabilidades": ["..."] ou [],
+  "termo_glossario": "termo que usuário quer explicação" ou null,
   "reasoning": "breve explicação da classificação"
 }
 
