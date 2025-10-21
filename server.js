@@ -7,6 +7,8 @@ import { fileURLToPath } from 'url';
 import { OpenAI } from 'openai';
 import pdfParse from 'pdf-parse-fork';
 import { SimpleRAG } from './simple-rag.js';
+import { IntentClassifier } from './classifier.js';
+import { AssistanceGenerator } from './assistance-generator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,6 +30,10 @@ const openai = new OpenAI({
 
 // Sistema RAG
 const ragSystem = new SimpleRAG(process.env.OPENAI_API_KEY);
+
+// Classificador de Intenção e Gerador de Assistência
+const classifier = new IntentClassifier(process.env.OPENAI_API_KEY);
+const assistanceGenerator = new AssistanceGenerator(process.env.OPENAI_API_KEY);
 
 // Cache para armazenar textos dos PDFs
 const pdfCache = new Map();
@@ -196,77 +202,92 @@ app.get('/lei/:nome', (req, res) => {
 
 // ============ NOVOS ENDPOINTS RAG ============
 
-// Rota para perguntas usando RAG
+// Rota para perguntas usando RAG com Classificação Inteligente
 app.post('/perguntar-rag', async (req, res) => {
   try {
-    const { pergunta, topK = 5 } = req.body;
+    const { pergunta, topK } = req.body;
     
     if (!pergunta) {
       return res.status(400).json({ error: 'Pergunta é obrigatória' });
     }
 
-    // 1. Buscar chunks relevantes usando RAG
-    const results = await ragSystem.search(pergunta, topK);
+    console.log(`\n${'='.repeat(70)}`);
+    console.log(`📥 NOVA PERGUNTA RECEBIDA`);
+    console.log(`${'='.repeat(70)}`);
+    console.log(`"${pergunta}"\n`);
+
+    // FASE 1: Classificar intenção (Consulta vs Assistência)
+    console.log('🎯 FASE 1: Classificando intenção...');
+    const classification = await classifier.classify(pergunta);
     
-    if (results.length === 0) {
+    // FASE 2: Buscar chunks mais relevantes no RAG
+    const numChunks = topK || (classification.modo === 'assistencia' ? 7 : 5);
+    console.log(`\n🔍 FASE 2: Buscando ${numChunks} chunks mais relevantes...`);
+    const relevantChunks = await ragSystem.search(pergunta, numChunks);
+    
+    if (relevantChunks.length === 0) {
       return res.json({
-        pergunta,
-        resposta: 'Não encontrei informações relevantes nas leis fornecidas.',
-        chunksEncontrados: 0
+        modo: classification.modo,
+        resposta: 'Não encontrei informações relevantes nas leis disponíveis para responder sua pergunta.',
+        chunksEncontrados: 0,
+        classification
       });
     }
 
-    // 2. Construir contexto com os chunks encontrados
-    const contexto = results
-      .map((r, i) => `[Chunk ${i + 1} - ${r.lei} - Similaridade: ${(r.similarity * 100).toFixed(1)}%]\n${r.text}`)
-      .join('\n\n---\n\n');
-
-    const leisEncontradas = [...new Set(results.map(r => r.lei))];
-
-    // 3. Enviar ao GPT
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `Você é um assistente jurídico especializado em leis de Moçambique.
-
-REGRAS IMPORTANTES:
-1. Responda APENAS com base nos trechos (chunks) das leis fornecidos abaixo
-2. SEMPRE cite o artigo específico e o nome da lei quando responder
-3. Se a informação NÃO estiver nos trechos fornecidos, responda: "Não há informação suficiente nos trechos fornecidos"
-4. NÃO invente ou assuma informações que não estejam explícitas nos trechos
-5. Use o formato: "Segundo o Artigo X da [Nome da Lei], ..."
-6. Os trechos foram selecionados automaticamente como os mais relevantes para a pergunta
-
-Trechos relevantes das leis:
-${contexto}`
-        },
-        {
-          role: 'user',
-          content: pergunta
-        }
-      ],
-      temperature: 0.1,
-      max_tokens: 2000
+    console.log(`   ✓ ${relevantChunks.length} chunks encontrados:`);
+    relevantChunks.forEach((chunk, i) => {
+      console.log(`      ${i + 1}. ${chunk.lei} (${(chunk.similarity * 100).toFixed(1)}%)`);
     });
+
+    let resultado;
+
+    // FASE 3: Gerar resposta apropriada com base no modo
+    if (classification.modo === 'assistencia') {
+      console.log(`\n💙 FASE 3: Gerando ASSISTÊNCIA PESSOAL...`);
+      
+      // Extrair fatos da situação
+      const facts = await classifier.extractFacts(pergunta, classification);
+      
+      // Gerar assistência completa
+      resultado = await assistanceGenerator.generateAssistance(
+        pergunta,
+        classification,
+        facts,
+        relevantChunks
+      );
+      
+    } else {
+      console.log(`\n📚 FASE 3: Gerando CONSULTA TÉCNICA...`);
+      
+      // Gerar consulta técnica
+      resultado = await assistanceGenerator.generateConsulta(
+        pergunta,
+        relevantChunks
+      );
+    }
+
+    console.log(`\n✅ Resposta gerada com sucesso!`);
+    console.log(`   Modo: ${resultado.modo.toUpperCase()}`);
+    console.log(`   Chunks usados: ${relevantChunks.length}`);
+    console.log(`   Leis consultadas: ${[...new Set(relevantChunks.map(c => c.lei))].length}`);
+    console.log(`${'='.repeat(70)}\n`);
 
     res.json({
       pergunta,
-      resposta: response.choices[0].message.content,
-      chunksEncontrados: results.length,
-      leisConsultadas: leisEncontradas,
-      detalhesChunks: results.map(r => ({
-        lei: r.lei,
-        similaridade: `${(r.similarity * 100).toFixed(1)}%`,
-        preview: r.text.substring(0, 150) + '...'
-      })),
-      modelo: 'gpt-4o-mini',
-      metodo: 'RAG'
+      ...resultado,
+      chunksEncontrados: relevantChunks.length,
+      leisConsultadas: [...new Set(relevantChunks.map(c => c.lei))],
+      classification: {
+        modo: classification.modo,
+        urgencia: classification.urgencia,
+        area_legal: classification.area_legal,
+        confianca: classification.confianca
+      },
+      metodo: 'RAG-Inteligente'
     });
 
   } catch (error) {
-    console.error('Erro ao processar pergunta RAG:', error);
+    console.error('❌ Erro ao processar pergunta RAG:', error);
     res.status(500).json({
       error: 'Erro ao processar pergunta',
       details: error.message
@@ -297,18 +318,32 @@ async function start() {
   const stats = ragSystem.getStats();
   
   app.listen(PORT, () => {
-    console.log(`\n🚀 Servidor rodando em http://localhost:${PORT}`);
-    console.log(`📚 ${pdfCache.size} leis carregadas`);
-    console.log(`🔍 ${stats.totalChunks} chunks indexados no RAG`);
-    console.log(`\n💡 Acesse http://localhost:${PORT} no navegador`);
+    console.log(`\n${'='.repeat(70)}`);
+    console.log(`🚀 SERVIDOR ASSISTENTE JURÍDICO MOÇAMBICANO`);
+    console.log(`${'='.repeat(70)}`);
+    console.log(`\n📊 Status do Sistema:`);
+    console.log(`   ✓ ${pdfCache.size} leis carregadas`);
+    console.log(`   ✓ ${stats.totalChunks} chunks indexados no RAG`);
+    console.log(`   ✓ Classificador de intenção ativo`);
+    console.log(`   ✓ Modo Assistência Pessoal ativo`);
+    console.log(`   ✓ Modo Consulta Técnica ativo`);
+    console.log(`\n🌐 URL: http://localhost:${PORT}`);
     console.log(`\n📖 Endpoints disponíveis:`);
-    console.log(`  • POST /perguntar     - Método antigo (envia todas leis)`);
-    console.log(`  • POST /perguntar-rag - Método RAG (busca inteligente) ⭐`);
-    console.log(`  • GET  /rag/stats     - Estatísticas do RAG`);
-    console.log(`\nExemplo RAG:`);
-    console.log(`curl -X POST http://localhost:${PORT}/perguntar-rag \\`);
-    console.log(`  -H "Content-Type: application/json" \\`);
-    console.log(`  -d '{"pergunta": "O que diz a lei de terras?"}'`);
+    console.log(`   • POST /perguntar-rag 🎯 - Sistema Inteligente (2 modos)`);
+    console.log(`        → Detecta automaticamente: Consulta ou Assistência`);
+    console.log(`   • POST /perguntar     📚 - Método tradicional`);
+    console.log(`   • GET  /rag/stats     📊 - Estatísticas do sistema`);
+    console.log(`   • GET  /leis          📋 - Listar todas as leis`);
+    console.log(`\n💡 Exemplos de uso:`);
+    console.log(`\n   CONSULTA TÉCNICA:`);
+    console.log(`   curl -X POST http://localhost:${PORT}/perguntar-rag \\`);
+    console.log(`     -H "Content-Type: application/json" \\`);
+    console.log(`     -d '{"pergunta": "O que diz o artigo 125 da Lei do Trabalho?"}'`);
+    console.log(`\n   ASSISTÊNCIA PESSOAL:`);
+    console.log(`   curl -X POST http://localhost:${PORT}/perguntar-rag \\`);
+    console.log(`     -H "Content-Type: application/json" \\`);
+    console.log(`     -d '{"pergunta": "Fui despedido sem aviso. Tenho 3 filhos. O que fazer?"}'`);
+    console.log(`\n${'='.repeat(70)}\n`);
   });
 }
 
