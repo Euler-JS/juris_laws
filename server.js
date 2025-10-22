@@ -77,21 +77,21 @@ async function loadAllPDFs() {
   console.log('Todos os PDFs foram carregados!');
 }
 
-// Rota principal
-app.get('/', (req, res) => {
+// Rota principal da API
+app.get('/api', (req, res) => {
   res.json({
     message: 'API de Consulta de Leis Moçambicanas',
     endpoints: {
-      '/leis': 'Lista todas as leis disponíveis',
-      '/perguntar': 'POST - Faz uma pergunta sobre as leis (método antigo)',
-      '/perguntar-rag': 'POST - Faz uma pergunta usando RAG (recomendado)',
-      '/rag/stats': 'Estatísticas do sistema RAG'
+      '/api/leis': 'Lista todas as leis disponíveis',
+      '/api/perguntar': 'POST - Faz uma pergunta sobre as leis (método antigo)',
+      '/api/perguntar-rag': 'POST - Faz uma pergunta usando RAG (recomendado)',
+      '/api/rag/stats': 'Estatísticas do sistema RAG'
     }
   });
 });
 
 // Rota para listar todas as leis disponíveis
-app.get('/leis', (req, res) => {
+app.get('/api/leis', (req, res) => {
   const leis = Array.from(pdfCache.entries()).map(([name, data]) => ({
     nome: name,
     caracteres: data.text.length,
@@ -105,7 +105,7 @@ app.get('/leis', (req, res) => {
 });
 
 // Rota para fazer perguntas
-app.post('/perguntar', async (req, res) => {
+app.post('/api/perguntar', async (req, res) => {
   try {
     const { pergunta, lei } = req.body;
     
@@ -189,7 +189,7 @@ ${contexto}`
 });
 
 // Rota para buscar lei específica
-app.get('/lei/:nome', (req, res) => {
+app.get('/api/lei/:nome', (req, res) => {
   const { nome } = req.params;
   const leiData = pdfCache.get(nome);
   
@@ -207,7 +207,7 @@ app.get('/lei/:nome', (req, res) => {
 // ============ NOVOS ENDPOINTS RAG ============
 
 // Rota para perguntas usando RAG com Classificação Inteligente
-app.post('/perguntar-rag', async (req, res) => {
+app.post('/api/perguntar-rag', async (req, res) => {
   try {
     const { pergunta, topK, session_id, context } = req.body;
     
@@ -345,7 +345,7 @@ app.post('/perguntar-rag', async (req, res) => {
 });
 
 // Estatísticas do RAG
-app.get('/rag/stats', async (req, res) => {
+app.get('/api/rag/stats', async (req, res) => {
   try {
     const stats = await ragSystem.getStats();
     res.json(stats);
@@ -355,7 +355,7 @@ app.get('/rag/stats', async (req, res) => {
 });
 
 // Novo: Listar artigos indexados
-app.get('/rag/artigos', async (req, res) => {
+app.get('/api/rag/artigos', async (req, res) => {
   try {
     const { lei } = req.query;
     const articles = await ragSystem.getIndexedArticles(lei);
@@ -370,7 +370,7 @@ app.get('/rag/artigos', async (req, res) => {
 });
 
 // Novo: Verificar se artigo específico existe
-app.get('/rag/artigos/:numero', async (req, res) => {
+app.get('/api/rag/artigos/:numero', async (req, res) => {
   try {
     const { numero } = req.params;
     const { lei } = req.query;
@@ -388,7 +388,7 @@ app.get('/rag/artigos/:numero', async (req, res) => {
 });
 
 // Estatísticas do Glossário
-app.get('/glossario/stats', (req, res) => {
+app.get('/api/glossario/stats', (req, res) => {
   try {
     const stats = glossary.getStats();
     res.json(stats);
@@ -398,7 +398,7 @@ app.get('/glossario/stats', (req, res) => {
 });
 
 // Endpoint dedicado para glossário (mais rápido)
-app.post('/glossario', async (req, res) => {
+app.post('/api/glossario', async (req, res) => {
   try {
     const { termo } = req.body;
     
