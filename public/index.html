@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LexMoçambique - Consulta de Leis com IA</title>
+    <title>Iyyov - Lei & Tecnologia | Assistente Legal IA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -87,6 +87,31 @@
             box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
         }
 
+        /* Textarea auto-resize */
+        #queryInput {
+            min-height: 48px;
+            max-height: 200px;
+            line-height: 1.5;
+            font-family: inherit;
+        }
+
+        #queryInput::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #queryInput::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #queryInput::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.3);
+            border-radius: 10px;
+        }
+
+        #queryInput::-webkit-scrollbar-thumb:hover {
+            background: rgba(139, 92, 246, 0.5);
+        }
+
         .dot-pulse {
             animation: dotPulse 1.4s infinite ease-in-out;
         }
@@ -139,9 +164,416 @@
                 box-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
             }
         }
+
+        /* Botão de deletar mensagem */
+        .delete-message-btn {
+            opacity: 0;
+            transition: all 0.2s ease;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .message-wrapper:hover .delete-message-btn {
+            opacity: 1;
+        }
+
+        .delete-message-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+            transform: scale(1.1);
+        }
+
+        .message-deleting {
+            animation: messageDelete 0.3s ease-out forwards;
+        }
+
+        @keyframes messageDelete {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.8) translateX(20px);
+            }
+        }
+
+        /* ===== RESPONSIVIDADE ===== */
+        
+        /* Sidebar responsiva */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 100;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            #sidebar.active {
+                transform: translateX(0);
+            }
+
+            #sidebar.w-80 {
+                width: 85vw;
+                max-width: 320px;
+            }
+
+            /* Overlay quando sidebar está aberta */
+            .sidebar-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 99;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+            }
+
+            .sidebar-overlay.active {
+                opacity: 1;
+                pointer-events: auto;
+            }
+        }
+
+        /* Ajustes para tablet */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            #sidebar.w-80 {
+                width: 280px;
+            }
+        }
+
+        /* Cards de sugestão responsivos */
+        @media (max-width: 640px) {
+            .suggestion-card {
+                padding: 1rem;
+            }
+
+            .suggestion-card h3 {
+                font-size: 0.875rem;
+            }
+
+            .suggestion-card p {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Input area responsiva */
+        @media (max-width: 640px) {
+            #sendBtn span {
+                display: none;
+            }
+
+            #sendBtn {
+                padding: 1rem;
+            }
+        }
+
+        /* Chat messages responsivas */
+        @media (max-width: 640px) {
+            .chat-bubble-user,
+            .chat-bubble-ai {
+                max-width: 85%;
+            }
+
+            .chat-bubble-user,
+            .chat-bubble-ai {
+                padding: 1rem;
+            }
+            
+            /* Ajuste do botão deletar no mobile - sempre visível */
+            .delete-message-btn {
+                opacity: 0.7;
+                left: -9px !important;
+                width: 32px;
+                height: 32px;
+            }
+            
+            .delete-message-btn:active {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+        }
+
+        /* Header responsivo */
+        @media (max-width: 640px) {
+            header h2 {
+                font-size: 1.125rem;
+            }
+
+            header p {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Welcome screen responsivo */
+        @media (max-width: 640px) {
+            #welcomeScreen h1 {
+                font-size: 1.875rem;
+            }
+
+            #welcomeScreen p {
+                font-size: 0.875rem;
+            }
+        }
+
+        /* ===== ANIMAÇÃO DE LOADING ESTILO NETFLIX ===== */
+        
+        /* Overlay de loading */
+        #loadingScreen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #0f0f23 100%);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transition: opacity 0.6s ease-out;
+        }
+
+        #loadingScreen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Container do logo */
+        .loading-logo-container {
+            position: relative;
+            width: 400px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Logo principal */
+        .loading-logo {
+            width: 300px;
+            height: auto;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 12px;
+            filter: drop-shadow(0 0 40px rgba(139, 92, 246, 0.6));
+            animation: logoReveal 2.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* Animação do logo (estilo Netflix) */
+        @keyframes logoReveal {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+                filter: drop-shadow(0 0 0px rgba(139, 92, 246, 0));
+            }
+            40% {
+                opacity: 1;
+                transform: scale(1.1);
+                filter: drop-shadow(0 0 60px rgba(139, 92, 246, 0.8));
+            }
+            60% {
+                transform: scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+                filter: drop-shadow(0 0 40px rgba(139, 92, 246, 0.6));
+            }
+        }
+
+        /* Círculo pulsante ao redor */
+        .loading-ring {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            border: 3px solid transparent;
+            border-top-color: #8B5CF6;
+            border-right-color: #6366F1;
+            border-radius: 50%;
+            animation: rotateRing 2s linear infinite, pulseRing 2s ease-in-out infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes rotateRing {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulseRing {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+        }
+
+        /* Partículas de luz */
+        .light-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #8B5CF6;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #8B5CF6;
+            animation: floatParticle 3s ease-in-out infinite;
+        }
+
+        @keyframes floatParticle {
+            0%, 100% {
+                transform: translateY(0) translateX(0);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Texto de loading */
+        .loading-text {
+            position: absolute;
+            bottom: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #8B5CF6;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: pulseText 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseText {
+            0%, 100% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Dots animados */
+        .loading-dots span {
+            animation: dotPulse 1.4s infinite ease-in-out;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        /* Botão skip intro */
+        .skip-intro-btn {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            padding: 10px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            color: #E5E7EB;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            animation: fadeInSkip 0.5s ease-out 1.5s forwards;
+        }
+
+        .skip-intro-btn:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.6);
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeInSkip {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Versão mobile do loading */
+        @media (max-width: 640px) {
+            .loading-logo-container {
+                width: 150px;
+                height: 150px;
+            }
+
+            .loading-logo {
+                width: 90px;
+                height: 90px;
+            }
+
+            .loading-ring {
+                width: 130px;
+                height: 130px;
+            }
+
+            .loading-text {
+                font-size: 12px;
+                bottom: -50px;
+            }
+
+            .skip-intro-btn {
+                bottom: 20px;
+                right: 20px;
+                padding: 8px 16px;
+                font-size: 11px;
+            }
+        }
     </style>
 </head>
 <body class="text-gray-100 gradient-mesh">
+    <!-- Loading Screen Estilo Netflix -->
+    <div id="loadingScreen">
+        <div class="loading-logo-container">
+            <!-- Anel rotativo -->
+            <div class="loading-ring"></div>
+            
+            <!-- Logo principal -->
+            <img src="logo-v2.png" alt="Iyyov Logo" class="loading-logo">
+            
+            <!-- Partículas de luz (8 partículas ao redor) -->
+            <div class="light-particle" style="top: 10%; left: 50%; animation-delay: 0s;"></div>
+            <div class="light-particle" style="top: 25%; right: 15%; animation-delay: 0.4s;"></div>
+            <div class="light-particle" style="top: 50%; right: 0%; animation-delay: 0.8s;"></div>
+            <div class="light-particle" style="bottom: 25%; right: 15%; animation-delay: 1.2s;"></div>
+            <div class="light-particle" style="bottom: 10%; left: 50%; animation-delay: 1.6s;"></div>
+            <div class="light-particle" style="bottom: 25%; left: 15%; animation-delay: 2s;"></div>
+            <div class="light-particle" style="top: 50%; left: 0%; animation-delay: 2.4s;"></div>
+            <div class="light-particle" style="top: 25%; left: 15%; animation-delay: 2.8s;"></div>
+            
+            <!-- Texto de loading -->
+            <div class="loading-text">
+                Iyyov<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>
+            </div>
+        </div>
+        
+        <!-- Botão Skip Intro (estilo Netflix) -->
+        <button class="skip-intro-btn" onclick="skipIntro()">
+            Pular Intro →
+        </button>
+    </div>
+    
+    <!-- Overlay para mobile -->
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+    
     <div class="flex h-screen">
         <!-- Sidebar -->
         <aside id="sidebar" class="w-80 bg-[#1a1a2e] border-r border-white/10 flex flex-col transition-all duration-300 shadow-2xl">
@@ -154,8 +586,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">LexMoçambique</h1>
-                        <p class="text-xs text-gray-500 font-medium">Powered by AI</p>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Iyyov</h1>
+                        <p class="text-xs text-gray-500 font-medium">Lei & Tecnologia</p>
                     </div>
                 </div>
                 
@@ -258,23 +690,23 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 flex flex-col bg-[#0f0f23]">
+        <main class="flex-1 flex flex-col bg-[#0f0f23] min-w-0">
             <!-- Header -->
-            <header class="bg-[#1a1a2e]/50 backdrop-blur-xl border-b border-white/10 px-8 py-5">
+            <header class="bg-[#1a1a2e]/50 backdrop-blur-xl border-b border-white/10 px-4 md:px-8 py-4 md:py-5">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-white/5 transition-colors">
-                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center gap-3 md:gap-4 min-w-0">
+                        <button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0">
+                            <svg class="w-5 h-5 md:w-6 md:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                             </svg>
                         </button>
-                        <div>
-                            <h2 class="text-xl font-bold text-white">Assistente Legal IA</h2>
-                            <p class="text-sm text-gray-500">Consulta a legislação moçambicana</p>
+                        <div class="min-w-0">
+                            <h2 class="text-lg md:text-xl font-bold text-white truncate">Assistente Legal IA</h2>
+                            <p class="text-xs md:text-sm text-gray-500 hidden sm:block">Consulta a legislação moçambicana</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <div class="px-4 py-2 rounded-full glass-effect">
+                    <div class="flex items-center gap-3 flex-shrink-0">
+                        <div class="px-3 md:px-4 py-1.5 md:py-2 rounded-full glass-effect hidden sm:block">
                             <div class="flex items-center gap-2">
                                 <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
                                 <span class="text-xs font-medium text-gray-300">Online</span>
@@ -285,19 +717,19 @@
             </header>
 
             <!-- Chat Area -->
-            <div id="chatArea" class="flex-1 overflow-y-auto scrollbar-custom px-8 py-8">
+            <div id="chatArea" class="flex-1 overflow-y-auto scrollbar-custom px-4 md:px-8 py-6 md:py-8">
                 <!-- Welcome Screen -->
-                <div id="welcomeScreen" class="max-w-4xl mx-auto py-16">
-                    <div class="text-center mb-12">
-                        <div class="inline-block p-6 rounded-2xl gradient-purple mb-6 logo-pulse">
-                            <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div id="welcomeScreen" class="max-w-4xl mx-auto py-8 md:py-16">
+                    <div class="text-center mb-8 md:mb-12">
+                        <div class="inline-block p-4 md:p-6 rounded-2xl gradient-purple mb-4 md:mb-6 logo-pulse">
+                            <svg class="w-12 h-12 md:w-16 md:h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
                             </svg>
                         </div>
-                        <h1 class="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent">
+                        <h1 class="text-2xl md:text-4xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent px-4">
                             Como posso ajudar hoje?
                         </h1>
-                        <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+                        <p class="text-gray-400 text-base md:text-lg max-w-2xl mx-auto px-4">
                             Tenho acesso a 48 leis moçambicanas. Faça qualquer pergunta sobre a legislação e receba respostas precisas com citações.
                         </p>
                     </div>
@@ -353,24 +785,25 @@
             </div>
 
             <!-- Input Area -->
-            <div class="bg-[#1a1a2e]/50 backdrop-blur-xl border-t border-white/10 px-8 py-6">
+            <div class="bg-[#1a1a2e]/50 backdrop-blur-xl border-t border-white/10 px-4 md:px-8 py-4 md:py-6">
                 <div class="max-w-4xl mx-auto">
-                    <div class="glass-effect rounded-2xl p-2 flex gap-3">
-                        <input
-                            type="text"
+                    <div class="glass-effect rounded-2xl p-2 flex gap-2 md:gap-3 items-end">
+                        <textarea
                             id="queryInput"
                             placeholder="Faça sua pergunta sobre a legislação moçambicana..."
-                            class="flex-1 bg-transparent px-6 py-4 focus:outline-none text-white placeholder-gray-500 input-glow rounded-xl transition-all"
-                            onkeypress="if(event.key === 'Enter') askQuestion()"
-                        />
-                        <button onclick="askQuestion()" id="sendBtn" class="gradient-purple hover:opacity-90 text-white rounded-xl px-8 py-4 flex items-center gap-2 font-semibold transition-all shadow-lg hover:shadow-purple-500/50">
+                            class="flex-1 bg-transparent px-4 md:px-6 py-3 md:py-4 focus:outline-none text-white placeholder-gray-500 input-glow rounded-xl transition-all text-sm md:text-base resize-none overflow-hidden"
+                            rows="1"
+                            onkeydown="handleTextareaKeydown(event)"
+                            oninput="autoResizeTextarea(this)"
+                        ></textarea>
+                        <button onclick="askQuestion()" id="sendBtn" class="gradient-purple hover:opacity-90 text-white rounded-xl px-4 md:px-8 py-3 md:py-4 flex items-center gap-2 font-semibold transition-all shadow-lg hover:shadow-purple-500/50 flex-shrink-0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                             </svg>
-                            Enviar
+                            <span class="hidden sm:inline">Enviar</span>
                         </button>
                     </div>
-                    <p class="text-xs text-center mt-4 text-gray-500">
+                    <p class="text-xs text-center mt-3 md:mt-4 text-gray-500 px-2">
                         💡 Respostas baseadas em IA com 48 leis indexadas. Para casos específicos, consulte um advogado.
                     </p>
                 </div>
@@ -380,7 +813,7 @@
 
     <script>
         // ===== CONSTANTES E CONFIGURAÇÕES =====
-        const STORAGE_KEY = 'lexmz_sessions';
+        const STORAGE_KEY = 'iyyov_sessions';
         const MAX_MESSAGES_PER_CHAT = 25;
         const WARNING_THRESHOLD = 20;
         const MAX_SESSIONS_STORED = 50;
@@ -538,16 +971,33 @@
                 document.getElementById('welcomeScreen').classList.add('hidden');
                 container.classList.remove('hidden');
                 
-                session.messages.forEach(msg => {
+                // Recarregar mensagens com IDs únicos
+                session.messages.forEach((msg, index) => {
                     if (msg.role === 'user') {
+                        const nextMsg = session.messages[index + 1];
                         addMessageToUI('user', msg.content);
-                    } else {
-                        addMessageToUI('ai', msg.content, msg.sources || null);
+                        
+                        // Se houver resposta da IA logo após, adiciona
+                        if (nextMsg && nextMsg.role === 'assistant') {
+                            addMessageToUI('ai', nextMsg.content, nextMsg.sources || null);
+                        }
+                    } else if (msg.role === 'assistant') {
+                        // Só adiciona se não foi adicionada no bloco anterior
+                        const prevMsg = session.messages[index - 1];
+                        if (!prevMsg || prevMsg.role !== 'user') {
+                            addMessageToUI('ai', msg.content, msg.sources || null);
+                        }
                     }
                 });
             }
             
             updateHistoryUI();
+            
+            // Fechar sidebar no mobile após selecionar sessão
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+            
             document.getElementById('queryInput').focus();
         }
 
@@ -655,8 +1105,25 @@
         // ===== CONTROLES DA UI =====
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('w-0');
-            sidebar.classList.toggle('w-80');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            // Para mobile: toggle active class
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            } else {
+                // Para desktop: toggle width
+                sidebar.classList.toggle('w-0');
+                sidebar.classList.toggle('w-80');
+            }
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
         }
 
         function newChat() {
@@ -666,6 +1133,11 @@
             document.getElementById('welcomeScreen').classList.remove('hidden');
             document.getElementById('queryInput').value = '';
             updateHistoryUI();
+            
+            // Fechar sidebar no mobile após selecionar
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
             
             // Remover avisos se existirem
             const warningBanner = document.getElementById('warningBanner');
@@ -752,8 +1224,11 @@
             document.getElementById('welcomeScreen').classList.add('hidden');
             container.classList.remove('hidden');
 
+            const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             const messageDiv = document.createElement('div');
-            messageDiv.className = `flex gap-4 message-appear ${type === 'user' ? 'justify-end' : 'justify-start'}`;
+            messageDiv.id = messageId;
+            messageDiv.className = `flex gap-4 message-appear message-wrapper ${type === 'user' ? 'justify-end' : 'justify-start'}`;
+            messageDiv.dataset.messageType = type;
 
             const timestamp = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
 
@@ -790,9 +1265,18 @@
                 `;
             } else {
                 messageDiv.innerHTML = `
-                    <div class="max-w-2xl order-1">
-                        <div class="chat-bubble-user rounded-2xl px-6 py-4 text-white">
+                    <div class="max-w-2xl order-1 relative group">
+                        <div class="chat-bubble-user rounded-2xl px-6 py-4 text-white relative">
                             <p class="text-sm leading-relaxed font-medium">${escapeHtml(content)}</p>
+                            <button 
+                                onclick="deleteMessage('${messageId}')" 
+                                class="delete-message-btn absolute -left-10 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center"
+                                title="Apagar mensagem"
+                            >
+                                <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
                         </div>
                         <p class="text-xs mt-2 text-right text-gray-600 flex items-center gap-1 justify-end">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -813,6 +1297,73 @@
             
             // Scroll automático suave após adicionar mensagem
             setTimeout(scrollToBottom, 100);
+            
+            return messageId;
+        }
+
+        function deleteMessage(messageId) {
+            const messageElement = document.getElementById(messageId);
+            if (!messageElement) return;
+
+            // Pega o conteúdo da mensagem antes de remover
+            const messageContent = messageElement.querySelector('.chat-bubble-user p')?.textContent;
+            
+            // Animação de saída
+            messageElement.classList.add('message-deleting');
+            
+            // Também anima e remove a resposta da IA se existir
+            const nextElement = messageElement.nextElementSibling;
+            const isNextAI = nextElement && nextElement.dataset.messageType === 'ai';
+            if (isNextAI) {
+                nextElement.classList.add('message-deleting');
+            }
+            
+            // Remove da UI após animação
+            setTimeout(() => {
+                messageElement.remove();
+                if (isNextAI) {
+                    nextElement.remove();
+                }
+                
+                // Atualiza o localStorage
+                if (currentSessionId && messageContent) {
+                    const data = getStorageData();
+                    if (!data) return;
+                    
+                    const session = data.sessions.find(s => s.id === currentSessionId);
+                    
+                    if (session && session.messages) {
+                        // Encontra o índice da mensagem pelo conteúdo
+                        const messageIndex = session.messages.findIndex(msg => 
+                            msg.role === 'user' && msg.content === messageContent
+                        );
+                        
+                        if (messageIndex !== -1) {
+                            // Remove a mensagem do usuário
+                            session.messages.splice(messageIndex, 1);
+                            
+                            // Se a próxima mensagem for da IA (resposta), também remove do storage
+                            if (messageIndex < session.messages.length && 
+                                session.messages[messageIndex].role === 'assistant') {
+                                session.messages.splice(messageIndex, 1);
+                            }
+                            
+                            // Atualiza a data de modificação da sessão
+                            session.updated_at = new Date().toISOString();
+                            
+                            // Salva as mudanças
+                            saveStorageData(data);
+                        }
+                    }
+                }
+                
+                // Se não houver mais mensagens, mostra a tela de boas-vindas
+                const container = document.getElementById('messagesContainer');
+                if (container.children.length === 0) {
+                    container.classList.add('hidden');
+                    document.getElementById('welcomeScreen').classList.remove('hidden');
+                }
+            }, 300);
         }
 
         function addLoadingMessage() {
@@ -846,6 +1397,33 @@
             if (loading) loading.remove();
         }
 
+        // ===== AUTO-RESIZE TEXTAREA =====
+        function autoResizeTextarea(textarea) {
+            // Reset altura para calcular o scrollHeight correto
+            textarea.style.height = 'auto';
+            
+            // Define altura baseada no conteúdo (máximo 200px)
+            const maxHeight = 200;
+            const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+            textarea.style.height = newHeight + 'px';
+            
+            // Adiciona scroll se ultrapassar o máximo
+            if (textarea.scrollHeight > maxHeight) {
+                textarea.style.overflowY = 'auto';
+            } else {
+                textarea.style.overflowY = 'hidden';
+            }
+        }
+
+        function handleTextareaKeydown(event) {
+            // Enter sem Shift = enviar
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                askQuestion();
+            }
+            // Shift + Enter = nova linha (comportamento padrão do textarea)
+        }
+
         async function askQuestion() {
             const input = document.getElementById('queryInput');
             const question = input.value.trim();
@@ -855,6 +1433,8 @@
             // Verificar limite antes de enviar
             if (!checkChatLimit()) {
                 input.value = '';
+                // Reset altura do textarea
+                input.style.height = 'auto';
                 return;
             }
 
@@ -877,6 +1457,8 @@
             addMessageToSession('user', question);
             
             input.value = '';
+            // Reset altura do textarea após enviar
+            input.style.height = 'auto';
             addLoadingMessage();
 
             try {
@@ -943,6 +1525,25 @@
             document.getElementById('queryCount').textContent = queryCount;
             
             document.getElementById('queryInput').focus();
+        });
+
+        // ===== CONTROLE DA ANIMAÇÃO DE LOADING =====
+        function skipIntro() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            loadingScreen.classList.add('fade-out');
+            
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 600);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const loadingScreen = document.getElementById('loadingScreen');
+            
+            // Simular carregamento (2.8 segundos para sincronizar com animação do logo)
+            setTimeout(() => {
+                skipIntro();
+            }, 2800);
         });
     </script>
 </body>

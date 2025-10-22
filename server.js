@@ -354,6 +354,39 @@ app.get('/rag/stats', async (req, res) => {
   }
 });
 
+// Novo: Listar artigos indexados
+app.get('/rag/artigos', async (req, res) => {
+  try {
+    const { lei } = req.query;
+    const articles = await ragSystem.getIndexedArticles(lei);
+    
+    res.json({
+      total: articles.length,
+      artigos: articles
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Novo: Verificar se artigo específico existe
+app.get('/rag/artigos/:numero', async (req, res) => {
+  try {
+    const { numero } = req.params;
+    const { lei } = req.query;
+    
+    const exists = await ragSystem.checkArticleExists(parseInt(numero), lei);
+    
+    res.json({
+      artigo: parseInt(numero),
+      existe: exists,
+      ...(lei && { lei })
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Estatísticas do Glossário
 app.get('/glossario/stats', (req, res) => {
   try {
