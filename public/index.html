@@ -430,6 +430,14 @@
             `).join('');
         }
 
+        function scrollToBottom() {
+            const chatArea = document.getElementById('chatArea');
+            chatArea.scrollTo({
+                top: chatArea.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
         function addMessage(type, content, sources = null) {
             const container = document.getElementById('messagesContainer');
             document.getElementById('welcomeScreen').classList.add('hidden');
@@ -493,7 +501,9 @@
             }
 
             container.appendChild(messageDiv);
-            container.scrollTop = container.scrollHeight;
+            
+            // Scroll automático suave após adicionar mensagem
+            setTimeout(scrollToBottom, 100);
         }
 
         function addLoadingMessage() {
@@ -517,7 +527,9 @@
                 </div>
             `;
             container.appendChild(loadingDiv);
-            container.scrollTop = container.scrollHeight;
+            
+            // Scroll automático quando mostra loading
+            setTimeout(scrollToBottom, 100);
         }
 
         function removeLoadingMessage() {
