@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta de Leis Moçambicanas</title>
+    <title>Iyyov - Lei & Tecnologia | Assistente Legal IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
         * {
             margin: 0;
             padding: 0;
@@ -12,323 +15,1541 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f23;
         }
-        
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
+
+        .gradient-purple {
+            background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
         }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
+
+        .gradient-mesh {
+            background: 
+                radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
         }
-        
-        .header h1 {
-            font-size: 2rem;
-            margin-bottom: 10px;
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        
-        .header p {
-            opacity: 0.9;
+
+        .chat-bubble-user {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
         }
-        
-        .content {
-            padding: 30px;
+
+        .chat-bubble-ai {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        
-        .input-group {
-            margin-bottom: 20px;
+
+        .message-appear {
+            animation: messageSlide 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 600;
-        }
-        
-        select, textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            font-family: inherit;
-            transition: border-color 0.3s;
-        }
-        
-        select:focus, textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-        
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 16px;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .response {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-            display: none;
-        }
-        
-        .response.show {
-            display: block;
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        @keyframes slideIn {
+
+        @keyframes messageSlide {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(4px);
+        }
+
+        .suggestion-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .suggestion-card:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.2);
+        }
+
+        .input-glow:focus {
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        }
+
+        /* Textarea auto-resize */
+        #queryInput {
+            min-height: 48px;
+            max-height: 200px;
+            line-height: 1.5;
+            font-family: inherit;
+        }
+
+        #queryInput::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #queryInput::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #queryInput::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.3);
+            border-radius: 10px;
+        }
+
+        #queryInput::-webkit-scrollbar-thumb:hover {
+            background: rgba(139, 92, 246, 0.5);
+        }
+
+        .dot-pulse {
+            animation: dotPulse 1.4s infinite ease-in-out;
+        }
+
+        .dot-pulse:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dot-pulse:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes dotPulse {
+            0%, 80%, 100% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+            40% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+
+        .scrollbar-custom::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .logo-pulse {
+            animation: logoPulse 3s infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
+            }
+        }
+
+        /* Botão de deletar mensagem */
+        .delete-message-btn {
+            opacity: 0;
+            transition: all 0.2s ease;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .message-wrapper:hover .delete-message-btn {
+            opacity: 1;
+        }
+
+        .delete-message-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+            transform: scale(1.1);
+        }
+
+        .message-deleting {
+            animation: messageDelete 0.3s ease-out forwards;
+        }
+
+        @keyframes messageDelete {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.8) translateX(20px);
+            }
+        }
+
+        /* ===== RESPONSIVIDADE ===== */
+        
+        /* Sidebar responsiva */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 100;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            #sidebar.active {
+                transform: translateX(0);
+            }
+
+            #sidebar.w-80 {
+                width: 85vw;
+                max-width: 320px;
+            }
+
+            /* Overlay quando sidebar está aberta */
+            .sidebar-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 99;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+            }
+
+            .sidebar-overlay.active {
+                opacity: 1;
+                pointer-events: auto;
+            }
+        }
+
+        /* Ajustes para tablet */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            #sidebar.w-80 {
+                width: 280px;
+            }
+        }
+
+        /* Cards de sugestão responsivos */
+        @media (max-width: 640px) {
+            .suggestion-card {
+                padding: 1rem;
+            }
+
+            .suggestion-card h3 {
+                font-size: 0.875rem;
+            }
+
+            .suggestion-card p {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Input area responsiva */
+        @media (max-width: 640px) {
+            #sendBtn span {
+                display: none;
+            }
+
+            #sendBtn {
+                padding: 1rem;
+            }
+        }
+
+        /* Chat messages responsivas */
+        @media (max-width: 640px) {
+            .chat-bubble-user,
+            .chat-bubble-ai {
+                max-width: 85%;
+            }
+
+            .chat-bubble-user,
+            .chat-bubble-ai {
+                padding: 1rem;
+            }
+            
+            /* Ajuste do botão deletar no mobile - sempre visível */
+            .delete-message-btn {
+                opacity: 0.7;
+                left: -9px !important;
+                width: 32px;
+                height: 32px;
+            }
+            
+            .delete-message-btn:active {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+        }
+
+        /* Header responsivo */
+        @media (max-width: 640px) {
+            header h2 {
+                font-size: 1.125rem;
+            }
+
+            header p {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Welcome screen responsivo */
+        @media (max-width: 640px) {
+            #welcomeScreen h1 {
+                font-size: 1.875rem;
+            }
+
+            #welcomeScreen p {
+                font-size: 0.875rem;
+            }
+        }
+
+        /* ===== ANIMAÇÃO DE LOADING ESTILO NETFLIX ===== */
+        
+        /* Overlay de loading */
+        #loadingScreen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #0f0f23 100%);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transition: opacity 0.6s ease-out;
+        }
+
+        #loadingScreen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Container do logo */
+        .loading-logo-container {
+            position: relative;
+            width: 400px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Logo principal */
+        .loading-logo {
+            width: 300px;
+            height: auto;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 12px;
+            filter: drop-shadow(0 0 40px rgba(139, 92, 246, 0.6));
+            animation: logoReveal 2.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* Animação do logo (estilo Netflix) */
+        @keyframes logoReveal {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+                filter: drop-shadow(0 0 0px rgba(139, 92, 246, 0));
+            }
+            40% {
+                opacity: 1;
+                transform: scale(1.1);
+                filter: drop-shadow(0 0 60px rgba(139, 92, 246, 0.8));
+            }
+            60% {
+                transform: scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+                filter: drop-shadow(0 0 40px rgba(139, 92, 246, 0.6));
+            }
+        }
+
+        /* Círculo pulsante ao redor */
+        .loading-ring {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            border: 3px solid transparent;
+            border-top-color: #8B5CF6;
+            border-right-color: #6366F1;
+            border-radius: 50%;
+            animation: rotateRing 2s linear infinite, pulseRing 2s ease-in-out infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes rotateRing {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulseRing {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+        }
+
+        /* Partículas de luz */
+        .light-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #8B5CF6;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #8B5CF6;
+            animation: floatParticle 3s ease-in-out infinite;
+        }
+
+        @keyframes floatParticle {
+            0%, 100% {
+                transform: translateY(0) translateX(0);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Texto de loading */
+        .loading-text {
+            position: absolute;
+            bottom: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #8B5CF6;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: pulseText 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseText {
+            0%, 100% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Dots animados */
+        .loading-dots span {
+            animation: dotPulse 1.4s infinite ease-in-out;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        /* Botão skip intro */
+        .skip-intro-btn {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            padding: 10px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            color: #E5E7EB;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            animation: fadeInSkip 0.5s ease-out 1.5s forwards;
+        }
+
+        .skip-intro-btn:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.6);
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeInSkip {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
             }
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
-        .response h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        
-        .response-text {
-            color: #333;
-            line-height: 1.6;
-            white-space: pre-wrap;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            display: none;
-        }
-        
-        .loading.show {
-            display: block;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .error {
-            background: #fee;
-            border-left-color: #f44;
-            color: #c33;
-        }
-        
-        .leis-list {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #666;
+
+        /* Versão mobile do loading */
+        @media (max-width: 640px) {
+            .loading-logo-container {
+                width: 150px;
+                height: 150px;
+            }
+
+            .loading-logo {
+                width: 90px;
+                height: 90px;
+            }
+
+            .loading-ring {
+                width: 130px;
+                height: 130px;
+            }
+
+            .loading-text {
+                font-size: 12px;
+                bottom: -50px;
+            }
+
+            .skip-intro-btn {
+                bottom: 20px;
+                right: 20px;
+                padding: 8px 16px;
+                font-size: 11px;
+            }
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🏛️ Consulta de Leis de Moçambique</h1>
-            <p>Faça perguntas sobre as leis e obtenha respostas baseadas na legislação</p>
+<body class="text-gray-100 gradient-mesh">
+    <!-- Loading Screen Estilo Netflix -->
+    <div id="loadingScreen">
+        <div class="loading-logo-container">
+            <!-- Anel rotativo -->
+            <div class="loading-ring"></div>
+            
+            <!-- Logo principal -->
+            <img src="logo-v2.png" alt="Iyyov Logo" class="loading-logo">
+            
+            <!-- Partículas de luz (8 partículas ao redor) -->
+            <div class="light-particle" style="top: 10%; left: 50%; animation-delay: 0s;"></div>
+            <div class="light-particle" style="top: 25%; right: 15%; animation-delay: 0.4s;"></div>
+            <div class="light-particle" style="top: 50%; right: 0%; animation-delay: 0.8s;"></div>
+            <div class="light-particle" style="bottom: 25%; right: 15%; animation-delay: 1.2s;"></div>
+            <div class="light-particle" style="bottom: 10%; left: 50%; animation-delay: 1.6s;"></div>
+            <div class="light-particle" style="bottom: 25%; left: 15%; animation-delay: 2s;"></div>
+            <div class="light-particle" style="top: 50%; left: 0%; animation-delay: 2.4s;"></div>
+            <div class="light-particle" style="top: 25%; left: 15%; animation-delay: 2.8s;"></div>
+            
+            <!-- Texto de loading -->
+            <div class="loading-text">
+                Iyyov<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>
+            </div>
         </div>
         
-        <div class="content">
-            <div class="input-group">
-                <label for="metodo">Método de Busca:</label>
-                <select id="metodo">
-                    <option value="rag">🔍 RAG - Busca Inteligente (Recomendado)</option>
-                    <option value="tradicional">📄 Tradicional - Todas as Leis</option>
-                </select>
-                <div class="leis-list">
-                    <small>RAG busca apenas trechos relevantes usando IA</small>
-                </div>
-            </div>
-            
-            <div class="input-group">
-                <label for="lei">Lei Específica (opcional):</label>
-                <select id="lei">
-                    <option value="">Todas as leis</option>
-                </select>
-                <div class="leis-list" id="leisCount">Carregando leis...</div>
-            </div>
-            
-            <div class="input-group">
-                <label for="pergunta">Sua Pergunta:</label>
-                <textarea 
-                    id="pergunta" 
-                    placeholder="Ex: O que diz a lei sobre casamento? Quais são os requisitos para cidadania?"
-                ></textarea>
-            </div>
-            
-            <button class="btn" onclick="fazerPergunta()" id="btnPerguntar">
-                Consultar Leis
-            </button>
-            
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Consultando legislação...</p>
-            </div>
-            
-            <div class="response" id="response">
-                <h3>Resposta:</h3>
-                <div class="response-text" id="responseText"></div>
-            </div>
-        </div>
+        <!-- Botão Skip Intro (estilo Netflix) -->
+        <button class="skip-intro-btn" onclick="skipIntro()">
+            Pular Intro →
+        </button>
     </div>
     
+    <!-- Overlay para mobile -->
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+    
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-80 bg-[#1a1a2e] border-r border-white/10 flex flex-col transition-all duration-300 shadow-2xl">
+            <!-- Logo & Brand -->
+            <div class="p-6 border-b border-white/10">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl gradient-purple flex items-center justify-center logo-pulse">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Iyyov</h1>
+                        <p class="text-xs text-gray-500 font-medium">Lei & Tecnologia</p>
+                    </div>
+                </div>
+                
+                <!-- New Chat Button -->
+                <button onclick="newChat()" class="w-full mt-6 gradient-purple hover:opacity-90 text-white rounded-xl px-4 py-3.5 flex items-center justify-center gap-2 font-semibold transition-all shadow-lg hover:shadow-purple-500/50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nova Consulta
+                </button>
+            </div>
+
+            <!-- Navigation & History -->
+            <div class="flex-1 overflow-y-auto scrollbar-custom px-4 py-6">
+                <!-- Recent History -->
+                <div class="mb-8">
+                    <h3 class="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500 px-2">
+                        Recentes
+                    </h3>
+                    <div id="historyList" class="space-y-1">
+                        <!-- Dynamic history items -->
+                    </div>
+                </div>
+
+                <!-- Laws Library -->
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500 px-2">
+                        Biblioteca Legal
+                    </h3>
+                    <div class="space-y-1">
+                        <div class="sidebar-item px-3 py-2.5 rounded-lg cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-200">Código Civil</p>
+                                    <p class="text-xs text-gray-500">Lei 7/2004</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sidebar-item px-3 py-2.5 rounded-lg cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-200">Código Penal</p>
+                                    <p class="text-xs text-gray-500">Lei 24/2019</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sidebar-item px-3 py-2.5 rounded-lg cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-200">Constituição</p>
+                                    <p class="text-xs text-gray-500">2004</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sidebar-item px-3 py-2.5 rounded-lg cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-200">Lei do Trabalho</p>
+                                    <p class="text-xs text-gray-500">Lei 23/2007</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Stats -->
+            <div class="p-4 border-t border-white/10">
+                <div class="glass-effect rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-gray-400">Base de Dados</span>
+                        <span class="text-xs font-bold text-purple-400">48 Leis</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-400">Consultas</span>
+                        <span class="text-xs font-bold text-indigo-400" id="queryCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col bg-[#0f0f23] min-w-0">
+            <!-- Header -->
+            <header class="bg-[#1a1a2e]/50 backdrop-blur-xl border-b border-white/10 px-4 md:px-8 py-4 md:py-5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 md:gap-4 min-w-0">
+                        <button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0">
+                            <svg class="w-5 h-5 md:w-6 md:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                        </button>
+                        <div class="min-w-0">
+                            <h2 class="text-lg md:text-xl font-bold text-white truncate">Assistente Legal IA</h2>
+                            <p class="text-xs md:text-sm text-gray-500 hidden sm:block">Consulta a legislação moçambicana</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 flex-shrink-0">
+                        <div class="px-3 md:px-4 py-1.5 md:py-2 rounded-full glass-effect hidden sm:block">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                                <span class="text-xs font-medium text-gray-300">Online</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Chat Area -->
+            <div id="chatArea" class="flex-1 overflow-y-auto scrollbar-custom px-4 md:px-8 py-6 md:py-8">
+                <!-- Welcome Screen -->
+                <div id="welcomeScreen" class="max-w-4xl mx-auto py-8 md:py-16">
+                    <div class="text-center mb-8 md:mb-12">
+                        <div class="inline-block p-4 md:p-6 rounded-2xl gradient-purple mb-4 md:mb-6 logo-pulse">
+                            <svg class="w-12 h-12 md:w-16 md:h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+                            </svg>
+                        </div>
+                        <h1 class="text-2xl md:text-4xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent px-4">
+                            Como posso ajudar hoje?
+                        </h1>
+                        <p class="text-gray-400 text-base md:text-lg max-w-2xl mx-auto px-4">
+                            Tenho acesso a 48 leis moçambicanas. Faça qualquer pergunta sobre a legislação e receba respostas precisas com citações.
+                        </p>
+                    </div>
+
+                    <!-- Suggestion Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+                        <button onclick="setQuery('Quais são os direitos fundamentais do trabalhador em Moçambique?')" class="suggestion-card rounded-2xl p-6 text-left group">
+                            <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-4 group-hover:bg-purple-500/20 transition-colors">
+                                <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-white mb-2">Direitos do Trabalhador</h3>
+                            <p class="text-sm text-gray-500">Consulte a legislação laboral moçambicana</p>
+                        </button>
+
+                        <button onclick="setQuery('Como funciona o processo de divórcio segundo a lei moçambicana?')" class="suggestion-card rounded-2xl p-6 text-left group">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-4 group-hover:bg-indigo-500/20 transition-colors">
+                                <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-white mb-2">Direito de Família</h3>
+                            <p class="text-sm text-gray-500">Informações sobre divórcio e casamento</p>
+                        </button>
+
+                        <button onclick="setQuery('Quais são as regras sobre propriedade e posse de terras?')" class="suggestion-card rounded-2xl p-6 text-left group">
+                            <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
+                                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-white mb-2">Propriedade & Terras</h3>
+                            <p class="text-sm text-gray-500">Lei de terras e regime de propriedade</p>
+                        </button>
+
+                        <button onclick="setQuery('Como funciona o processo criminal em Moçambique?')" class="suggestion-card rounded-2xl p-6 text-left group">
+                            <div class="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center mb-4 group-hover:bg-violet-500/20 transition-colors">
+                                <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-white mb-2">Processo Criminal</h3>
+                            <p class="text-sm text-gray-500">Código de processo penal e direitos</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages Container -->
+                <div id="messagesContainer" class="max-w-4xl mx-auto space-y-6 hidden">
+                    <!-- Messages appear here -->
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="bg-[#1a1a2e]/50 backdrop-blur-xl border-t border-white/10 px-4 md:px-8 py-4 md:py-6">
+                <div class="max-w-4xl mx-auto">
+                    <div class="glass-effect rounded-2xl p-2 flex gap-2 md:gap-3 items-end">
+                        <textarea
+                            id="queryInput"
+                            placeholder="Faça sua pergunta sobre a legislação moçambicana..."
+                            class="flex-1 bg-transparent px-4 md:px-6 py-3 md:py-4 focus:outline-none text-white placeholder-gray-500 input-glow rounded-xl transition-all text-sm md:text-base resize-none overflow-hidden"
+                            rows="1"
+                            onkeydown="handleTextareaKeydown(event)"
+                            oninput="autoResizeTextarea(this)"
+                        ></textarea>
+                        <button onclick="askQuestion()" id="sendBtn" class="gradient-purple hover:opacity-90 text-white rounded-xl px-4 md:px-8 py-3 md:py-4 flex items-center gap-2 font-semibold transition-all shadow-lg hover:shadow-purple-500/50 flex-shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                            <span class="hidden sm:inline">Enviar</span>
+                        </button>
+                    </div>
+                    <p class="text-xs text-center mt-3 md:mt-4 text-gray-500 px-2">
+                        💡 Respostas baseadas em IA com 48 leis indexadas. Para casos específicos, consulte um advogado.
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
     <script>
-        const API_URL = 'http://localhost:3000';
-        
-        // Carregar lista de leis ao iniciar
-        async function carregarLeis() {
-            try {
-                const response = await fetch(`${API_URL}/leis`);
-                const data = await response.json();
-                
-                const select = document.getElementById('lei');
-                data.leis.forEach(lei => {
-                    const option = document.createElement('option');
-                    option.value = lei;
-                    option.textContent = lei.replace('.pdf', '').replace(/-/g, ' ');
-                    select.appendChild(option);
-                });
-                
-                document.getElementById('leisCount').textContent = 
-                    `${data.total} leis disponíveis`;
-            } catch (error) {
-                console.error('Erro ao carregar leis:', error);
-                document.getElementById('leisCount').textContent = 
-                    'Erro ao carregar lista de leis';
+        // ===== CONSTANTES E CONFIGURAÇÕES =====
+        const STORAGE_KEY = 'iyyov_sessions';
+        const MAX_MESSAGES_PER_CHAT = 25;
+        const WARNING_THRESHOLD = 20;
+        const MAX_SESSIONS_STORED = 50;
+
+        // ===== ESTADO GLOBAL =====
+        let currentSessionId = null;
+        let queryCount = 0;
+
+        // ===== GERENCIAMENTO DE LOCALSTORAGE =====
+        function initializeStorage() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (!data) {
+                const initialData = {
+                    version: "1.0",
+                    sessions: [],
+                    statistics: {
+                        total_queries: 0,
+                        total_sessions: 0,
+                        first_use: new Date().toISOString(),
+                        last_use: new Date().toISOString()
+                    }
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(initialData));
             }
         }
-        
-        // Fazer pergunta
-        async function fazerPergunta() {
-            const pergunta = document.getElementById('pergunta').value.trim();
-            const lei = document.getElementById('lei').value;
-            const metodo = document.getElementById('metodo').value;
+
+        function getStorageData() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : null;
+        }
+
+        function saveStorageData(data) {
+            // Auto-limpeza: manter apenas últimas 50 sessões
+            if (data.sessions.length > MAX_SESSIONS_STORED) {
+                data.sessions = data.sessions
+                    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+                    .slice(0, MAX_SESSIONS_STORED);
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        // ===== GERENCIAMENTO DE SESSÕES =====
+        function generateSessionId() {
+            const now = new Date();
+            const timestamp = now.getTime();
+            const random = Math.random().toString(36).substring(2, 9);
+            return `sess_${timestamp}_${random}`;
+        }
+
+        function createNewSession() {
+            const sessionId = generateSessionId();
+            const data = getStorageData();
             
-            if (!pergunta) {
-                alert('Por favor, digite uma pergunta');
+            // Desativar todas as outras sessões
+            data.sessions.forEach(s => s.is_active = false);
+            
+            const newSession = {
+                id: sessionId,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                title: "Nova consulta",
+                is_active: true,
+                message_count: 0,
+                messages: [],
+                metadata: {
+                    topics: [],
+                    laws_referenced: [],
+                    modes_used: []
+                }
+            };
+            
+            data.sessions.unshift(newSession);
+            data.statistics.total_sessions++;
+            data.statistics.last_use = new Date().toISOString();
+            
+            saveStorageData(data);
+            currentSessionId = sessionId;
+            
+            return sessionId;
+        }
+
+        function getCurrentSession() {
+            const data = getStorageData();
+            return data.sessions.find(s => s.id === currentSessionId);
+        }
+
+        function addMessageToSession(role, content, metadata = {}) {
+            const data = getStorageData();
+            const session = data.sessions.find(s => s.id === currentSessionId);
+            
+            if (!session) return;
+            
+            const message = {
+                id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                timestamp: new Date().toISOString(),
+                role: role,
+                content: content,
+                ...metadata
+            };
+            
+            session.messages.push(message);
+            session.message_count++;
+            session.updated_at = new Date().toISOString();
+            
+            // Gerar título automático após 3 mensagens
+            if (session.message_count === 3 && session.title === "Nova consulta") {
+                session.title = generateSessionTitle(session.messages);
+            }
+            
+            // Atualizar estatísticas
+            if (role === 'user') {
+                data.statistics.total_queries++;
+            }
+            
+            saveStorageData(data);
+            updateHistoryUI();
+        }
+
+        function generateSessionTitle(messages) {
+            // Pegar a primeira pergunta do usuário
+            const firstUserMessage = messages.find(m => m.role === 'user');
+            if (!firstUserMessage) return "Nova consulta";
+            
+            let title = firstUserMessage.content.substring(0, 50);
+            if (firstUserMessage.content.length > 50) {
+                title += '...';
+            }
+            
+            return title;
+        }
+
+        function loadSession(sessionId) {
+            const data = getStorageData();
+            const session = data.sessions.find(s => s.id === sessionId);
+            
+            if (!session) return;
+            
+            // Desativar todas as sessões
+            data.sessions.forEach(s => s.is_active = false);
+            
+            // Ativar sessão selecionada
+            session.is_active = true;
+            saveStorageData(data);
+            
+            currentSessionId = sessionId;
+            
+            // Limpar UI e recriar mensagens
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = '';
+            
+            if (session.messages.length === 0) {
+                document.getElementById('welcomeScreen').classList.remove('hidden');
+                container.classList.add('hidden');
+            } else {
+                document.getElementById('welcomeScreen').classList.add('hidden');
+                container.classList.remove('hidden');
+                
+                // Recarregar mensagens com IDs únicos
+                session.messages.forEach((msg, index) => {
+                    if (msg.role === 'user') {
+                        const nextMsg = session.messages[index + 1];
+                        addMessageToUI('user', msg.content);
+                        
+                        // Se houver resposta da IA logo após, adiciona
+                        if (nextMsg && nextMsg.role === 'assistant') {
+                            addMessageToUI('ai', nextMsg.content, nextMsg.sources || null);
+                        }
+                    } else if (msg.role === 'assistant') {
+                        // Só adiciona se não foi adicionada no bloco anterior
+                        const prevMsg = session.messages[index - 1];
+                        if (!prevMsg || prevMsg.role !== 'user') {
+                            addMessageToUI('ai', msg.content, msg.sources || null);
+                        }
+                    }
+                });
+            }
+            
+            updateHistoryUI();
+            
+            // Fechar sidebar no mobile após selecionar sessão
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+            
+            document.getElementById('queryInput').focus();
+        }
+
+        // ===== INTERFACE DO HISTÓRICO =====
+        function updateHistoryUI() {
+            const data = getStorageData();
+            const historyList = document.getElementById('historyList');
+            
+            if (!data || data.sessions.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center py-8 px-4">
+                        <svg class="w-12 h-12 mx-auto text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                        </svg>
+                        <p class="text-sm text-gray-500">Nenhuma conversa ainda</p>
+                    </div>
+                `;
                 return;
             }
             
-            const btn = document.getElementById('btnPerguntar');
-            const loading = document.getElementById('loading');
-            const response = document.getElementById('response');
+            // Agrupar por data
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
             
-            // Mostrar loading
-            btn.disabled = true;
-            loading.classList.add('show');
-            response.classList.remove('show');
+            const todaySessions = [];
+            const yesterdaySessions = [];
+            const olderSessions = [];
             
-            try {
-                const endpoint = metodo === 'rag' ? '/perguntar-rag' : '/perguntar';
-                const body = metodo === 'rag' 
-                    ? { pergunta, topK: 5 }
-                    : { pergunta, lei };
-                
-                const res = await fetch(`${API_URL}${endpoint}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(body)
-                });
-                
-                const data = await res.json();
-                
-                if (res.ok) {
-                    let respostaTexto = data.resposta;
-                    
-                    // Adicionar informações extras se for RAG
-                    if (metodo === 'rag' && data.detalhesChunks) {
-                        respostaTexto += '\n\n---\n📊 Informações da busca:\n';
-                        respostaTexto += `• ${data.chunksEncontrados} trechos relevantes encontrados\n`;
-                        respostaTexto += `• Leis consultadas: ${data.leisConsultadas.join(', ')}\n`;
-                    }
-                    
-                    document.getElementById('responseText').textContent = respostaTexto;
-                    response.classList.remove('error');
-                    response.classList.add('show');
+            data.sessions.forEach(session => {
+                const sessionDate = new Date(session.updated_at);
+                if (isSameDay(sessionDate, today)) {
+                    todaySessions.push(session);
+                } else if (isSameDay(sessionDate, yesterday)) {
+                    yesterdaySessions.push(session);
                 } else {
-                    document.getElementById('responseText').textContent = 
-                        `Erro: ${data.error || 'Erro desconhecido'}`;
-                    response.classList.add('error');
-                    response.classList.add('show');
+                    olderSessions.push(session);
                 }
-            } catch (error) {
-                console.error('Erro:', error);
-                document.getElementById('responseText').textContent = 
-                    `Erro de conexão: ${error.message}`;
-                response.classList.add('error');
-                response.classList.add('show');
-            } finally {
-                btn.disabled = false;
-                loading.classList.remove('show');
+            });
+            
+            let html = '';
+            
+            if (todaySessions.length > 0) {
+                html += '<div class="mb-6"><h3 class="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500 px-2">Hoje</h3>';
+                html += renderSessionGroup(todaySessions);
+                html += '</div>';
+            }
+            
+            if (yesterdaySessions.length > 0) {
+                html += '<div class="mb-6"><h3 class="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500 px-2">Ontem</h3>';
+                html += renderSessionGroup(yesterdaySessions);
+                html += '</div>';
+            }
+            
+            if (olderSessions.length > 0) {
+                html += '<div class="mb-6"><h3 class="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500 px-2">Anteriores</h3>';
+                html += renderSessionGroup(olderSessions.slice(0, 10));
+                html += '</div>';
+            }
+            
+            historyList.innerHTML = html;
+        }
+
+        function renderSessionGroup(sessions) {
+            return sessions.map(session => {
+                const isActive = session.is_active;
+                const time = new Date(session.updated_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+                
+                return `
+                    <button 
+                        onclick="loadSession('${session.id}')" 
+                        class="sidebar-item w-full text-left px-3 py-2.5 rounded-lg mb-1 ${isActive ? 'bg-purple-500/10 border border-purple-500/20' : ''}"
+                    >
+                        <div class="flex items-start gap-3">
+                            ${isActive ? 
+                                '<div class="w-2 h-2 rounded-full bg-green-400 animate-pulse mt-1.5 flex-shrink-0"></div>' :
+                                '<svg class="w-4 h-4 mt-0.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>'
+                            }
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm ${isActive ? 'text-white font-semibold' : 'text-gray-300 font-medium'} truncate">
+                                    ${escapeHtml(session.title)}
+                                </p>
+                                <p class="text-xs text-gray-600 mt-0.5">
+                                    ${time} • ${session.message_count} msg${session.message_count !== 1 ? 's' : ''}
+                                </p>
+                            </div>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function isSameDay(date1, date2) {
+            return date1.getFullYear() === date2.getFullYear() &&
+                   date1.getMonth() === date2.getMonth() &&
+                   date1.getDate() === date2.getDate();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ===== CONTROLES DA UI =====
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            // Para mobile: toggle active class
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            } else {
+                // Para desktop: toggle width
+                sidebar.classList.toggle('w-0');
+                sidebar.classList.toggle('w-80');
             }
         }
-        
-        // Permitir enviar com Enter (Ctrl+Enter)
-        document.getElementById('pergunta').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
-                fazerPergunta();
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        }
+
+        function newChat() {
+            createNewSession();
+            document.getElementById('messagesContainer').innerHTML = '';
+            document.getElementById('messagesContainer').classList.add('hidden');
+            document.getElementById('welcomeScreen').classList.remove('hidden');
+            document.getElementById('queryInput').value = '';
+            updateHistoryUI();
+            
+            // Fechar sidebar no mobile após selecionar
+            if (window.innerWidth <= 768) {
+                closeSidebar();
             }
+            
+            // Remover avisos se existirem
+            const warningBanner = document.getElementById('warningBanner');
+            if (warningBanner) warningBanner.remove();
+        }
+
+        function setQuery(text) {
+            document.getElementById('queryInput').value = text;
+            document.getElementById('queryInput').focus();
+        }
+
+
+        function scrollToBottom() {
+            const chatArea = document.getElementById('chatArea');
+            chatArea.scrollTo({
+                top: chatArea.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        function checkChatLimit() {
+            const session = getCurrentSession();
+            if (!session) return true;
+            
+            const messageCount = session.message_count;
+            
+            if (messageCount >= MAX_MESSAGES_PER_CHAT) {
+                showLimitReachedBanner();
+                return false;
+            } else if (messageCount >= WARNING_THRESHOLD) {
+                showWarningBanner();
+            }
+            return true;
+        }
+
+        function showWarningBanner() {
+            const existing = document.getElementById('warningBanner');
+            if (existing) return;
+            
+            const banner = document.createElement('div');
+            banner.id = 'warningBanner';
+            banner.className = 'fixed top-4 right-4 bg-yellow-500/20 border border-yellow-500/30 rounded-xl p-4 backdrop-blur-xl z-50 message-appear max-w-md';
+            banner.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-yellow-300">Conversa longa detectada</p>
+                        <p class="text-xs text-yellow-400/80 mt-1">Considere iniciar um novo chat para melhor performance</p>
+                    </div>
+                    <button onclick="newChat()" class="text-xs bg-yellow-500/20 hover:bg-yellow-500/30 px-3 py-1.5 rounded-lg text-yellow-300 font-medium transition-all flex-shrink-0">
+                        Novo Chat
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(banner);
+        }
+
+        function showLimitReachedBanner() {
+            const banner = document.createElement('div');
+            banner.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center message-appear';
+            banner.innerHTML = `
+                <div class="glass-effect rounded-2xl p-8 max-w-md mx-4">
+                    <div class="text-center">
+                        <div class="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Limite de Mensagens Atingido</h3>
+                        <p class="text-gray-400 mb-6">Esta conversa atingiu ${MAX_MESSAGES_PER_CHAT} mensagens. Para garantir melhor performance, inicie um novo chat para continuar.</p>
+                        <button onclick="newChat(); this.closest('.fixed').remove();" class="w-full gradient-purple text-white rounded-xl px-6 py-3 font-semibold hover:opacity-90 transition-all">
+                            Iniciar Novo Chat
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(banner);
+        }
+
+        function addMessageToUI(type, content, sources = null) {
+            const container = document.getElementById('messagesContainer');
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            container.classList.remove('hidden');
+
+            const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            const messageDiv = document.createElement('div');
+            messageDiv.id = messageId;
+            messageDiv.className = `flex gap-4 message-appear message-wrapper ${type === 'user' ? 'justify-end' : 'justify-start'}`;
+            messageDiv.dataset.messageType = type;
+
+            const timestamp = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+
+            if (type === 'ai') {
+                messageDiv.innerHTML = `
+                    <div class="w-10 h-10 rounded-xl gradient-purple flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <div class="max-w-2xl">
+                        <div class="chat-bubble-ai rounded-2xl px-6 py-4">
+                            <p class="text-sm leading-relaxed whitespace-pre-line text-gray-200">${escapeHtml(content)}</p>
+                            ${sources ? `
+                                <div class="mt-4 pt-4 border-t border-white/10">
+                                    <p class="text-xs font-semibold mb-3 text-gray-400 uppercase tracking-wide">📚 Fontes Legais:</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        ${sources.map(source => `
+                                            <span class="text-xs px-3 py-1.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-medium">
+                                                ${escapeHtml(source)}
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <p class="text-xs mt-2 text-gray-600 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            ${timestamp}
+                        </p>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="max-w-2xl order-1 relative group">
+                        <div class="chat-bubble-user rounded-2xl px-6 py-4 text-white relative">
+                            <p class="text-sm leading-relaxed font-medium">${escapeHtml(content)}</p>
+                            <button 
+                                onclick="deleteMessage('${messageId}')" 
+                                class="delete-message-btn absolute -left-10 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center"
+                                title="Apagar mensagem"
+                            >
+                                <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="text-xs mt-2 text-right text-gray-600 flex items-center gap-1 justify-end">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            ${timestamp}
+                        </p>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center flex-shrink-0 order-2 shadow-lg border border-white/10">
+                        <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
+                `;
+            }
+
+            container.appendChild(messageDiv);
+            
+            // Scroll automático suave após adicionar mensagem
+            setTimeout(scrollToBottom, 100);
+            
+            return messageId;
+        }
+
+        function deleteMessage(messageId) {
+            const messageElement = document.getElementById(messageId);
+            if (!messageElement) return;
+
+            // Pega o conteúdo da mensagem antes de remover
+            const messageContent = messageElement.querySelector('.chat-bubble-user p')?.textContent;
+            
+            // Animação de saída
+            messageElement.classList.add('message-deleting');
+            
+            // Também anima e remove a resposta da IA se existir
+            const nextElement = messageElement.nextElementSibling;
+            const isNextAI = nextElement && nextElement.dataset.messageType === 'ai';
+            if (isNextAI) {
+                nextElement.classList.add('message-deleting');
+            }
+            
+            // Remove da UI após animação
+            setTimeout(() => {
+                messageElement.remove();
+                if (isNextAI) {
+                    nextElement.remove();
+                }
+                
+                // Atualiza o localStorage
+                if (currentSessionId && messageContent) {
+                    const data = getStorageData();
+                    if (!data) return;
+                    
+                    const session = data.sessions.find(s => s.id === currentSessionId);
+                    
+                    if (session && session.messages) {
+                        // Encontra o índice da mensagem pelo conteúdo
+                        const messageIndex = session.messages.findIndex(msg => 
+                            msg.role === 'user' && msg.content === messageContent
+                        );
+                        
+                        if (messageIndex !== -1) {
+                            // Remove a mensagem do usuário
+                            session.messages.splice(messageIndex, 1);
+                            
+                            // Se a próxima mensagem for da IA (resposta), também remove do storage
+                            if (messageIndex < session.messages.length && 
+                                session.messages[messageIndex].role === 'assistant') {
+                                session.messages.splice(messageIndex, 1);
+                            }
+                            
+                            // Atualiza a data de modificação da sessão
+                            session.updated_at = new Date().toISOString();
+                            
+                            // Salva as mudanças
+                            saveStorageData(data);
+                        }
+                    }
+                }
+                
+                // Se não houver mais mensagens, mostra a tela de boas-vindas
+                const container = document.getElementById('messagesContainer');
+                if (container.children.length === 0) {
+                    container.classList.add('hidden');
+                    document.getElementById('welcomeScreen').classList.remove('hidden');
+                }
+            }, 300);
+        }
+
+        function addLoadingMessage() {
+            const container = document.getElementById('messagesContainer');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loadingMessage';
+            loadingDiv.className = 'flex gap-4 message-appear';
+            loadingDiv.innerHTML = `
+                <div class="w-10 h-10 rounded-xl gradient-purple flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <div class="chat-bubble-ai rounded-2xl px-6 py-4">
+                    <div class="flex gap-2 items-center">
+                        <span class="w-2 h-2 rounded-full bg-purple-400 dot-pulse"></span>
+                        <span class="w-2 h-2 rounded-full bg-purple-400 dot-pulse"></span>
+                        <span class="w-2 h-2 rounded-full bg-purple-400 dot-pulse"></span>
+                        <span class="text-xs text-gray-500 ml-2">Analisando legislação...</span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(loadingDiv);
+            
+            // Scroll automático quando mostra loading
+            setTimeout(scrollToBottom, 100);
+        }
+
+        function removeLoadingMessage() {
+            const loading = document.getElementById('loadingMessage');
+            if (loading) loading.remove();
+        }
+
+        // ===== AUTO-RESIZE TEXTAREA =====
+        function autoResizeTextarea(textarea) {
+            // Reset altura para calcular o scrollHeight correto
+            textarea.style.height = 'auto';
+            
+            // Define altura baseada no conteúdo (máximo 200px)
+            const maxHeight = 200;
+            const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+            textarea.style.height = newHeight + 'px';
+            
+            // Adiciona scroll se ultrapassar o máximo
+            if (textarea.scrollHeight > maxHeight) {
+                textarea.style.overflowY = 'auto';
+            } else {
+                textarea.style.overflowY = 'hidden';
+            }
+        }
+
+        function handleTextareaKeydown(event) {
+            // Enter sem Shift = enviar
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                askQuestion();
+            }
+            // Shift + Enter = nova linha (comportamento padrão do textarea)
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('queryInput');
+            const question = input.value.trim();
+            
+            if (!question) return;
+
+            // Verificar limite antes de enviar
+            if (!checkChatLimit()) {
+                input.value = '';
+                // Reset altura do textarea
+                input.style.height = 'auto';
+                return;
+            }
+
+            // Criar sessão se não existir
+            if (!currentSessionId) {
+                createNewSession();
+            }
+
+            // Atualizar estatísticas
+            const data = getStorageData();
+            data.statistics.total_queries++;
+            data.statistics.last_use = new Date().toISOString();
+            saveStorageData(data);
+            
+            queryCount = data.statistics.total_queries;
+            document.getElementById('queryCount').textContent = queryCount;
+
+            // Adicionar mensagem do usuário à UI e ao storage
+            addMessageToUI('user', question);
+            addMessageToSession('user', question);
+            
+            input.value = '';
+            // Reset altura do textarea após enviar
+            input.style.height = 'auto';
+            addLoadingMessage();
+
+            try {
+                // Obter contexto da sessão para enviar ao backend
+                const session = getCurrentSession();
+                // Enviar últimas 10 mensagens para melhor contexto (5 pares usuário-assistente)
+                const context = session.messages.slice(-10).map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                }));
+
+                const response = await fetch('/perguntar-rag', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        pergunta: question,
+                        session_id: currentSessionId,
+                        context: context // Enviar contexto para o backend
+                    })
+                });
+
+                const responseData = await response.json();
+                removeLoadingMessage();
+
+                if (response.ok) {
+                    const sources = responseData.chunks ? 
+                        [...new Set(responseData.chunks.map(chunk => chunk.lei))].slice(0, 3) : null;
+                    
+                    addMessageToUI('ai', responseData.resposta, sources);
+                    addMessageToSession('assistant', responseData.resposta, {
+                        sources: sources,
+                        mode: responseData.modo || 'consulta',
+                        chunks_used: responseData.chunks ? responseData.chunks.length : 0
+                    });
+                } else {
+                    const errorMsg = '❌ Desculpe, ocorreu um erro ao processar sua pergunta. Por favor, tente novamente.';
+                    addMessageToUI('ai', errorMsg);
+                    addMessageToSession('assistant', errorMsg, { error: true });
+                }
+            } catch (error) {
+                removeLoadingMessage();
+                const errorMsg = '⚠️ Erro de conexão. Verifique se o servidor está funcionando e tente novamente.';
+                addMessageToUI('ai', errorMsg);
+                addMessageToSession('assistant', errorMsg, { error: true });
+                console.error('Erro:', error);
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            initializeStorage();
+            updateHistoryUI();
+            
+            // Carregar sessão ativa se existir
+            const data = getStorageData();
+            const activeSession = data.sessions.find(s => s.is_active);
+            if (activeSession) {
+                loadSession(activeSession.id);
+            }
+            
+            // Atualizar contador de queries
+            queryCount = data.statistics.total_queries;
+            document.getElementById('queryCount').textContent = queryCount;
+            
+            document.getElementById('queryInput').focus();
         });
-        
-        // Carregar leis ao iniciar
-        carregarLeis();
+
+        // ===== CONTROLE DA ANIMAÇÃO DE LOADING =====
+        function skipIntro() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            loadingScreen.classList.add('fade-out');
+            
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 600);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const loadingScreen = document.getElementById('loadingScreen');
+            
+            // Simular carregamento (2.8 segundos para sincronizar com animação do logo)
+            setTimeout(() => {
+                skipIntro();
+            }, 2800);
+        });
+    </script>
+</body>
+</html>
+```
     </script>
 </body>
 </html>
