@@ -6,6 +6,8 @@
     <title>LexMoçambique - Consulta de Leis com IA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
         * {
             margin: 0;
             padding: 0;
@@ -13,133 +15,226 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f23;
         }
 
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .gradient-purple {
+            background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
         }
 
-        .chat-message {
-            animation: slideIn 0.3s ease-out;
+        .gradient-mesh {
+            background: 
+                radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
         }
 
-        @keyframes slideIn {
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-bubble-user {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .chat-bubble-ai {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .message-appear {
+            animation: messageSlide 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes messageSlide {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(20px) scale(0.95);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
         }
 
-        .loading-dots span {
-            animation: bounce 1.4s infinite ease-in-out;
+        .sidebar-item {
+            transition: all 0.2s ease;
         }
 
-        .loading-dots span:nth-child(1) {
-            animation-delay: -0.32s;
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(4px);
         }
 
-        .loading-dots span:nth-child(2) {
-            animation-delay: -0.16s;
+        .suggestion-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        @keyframes bounce {
+        .suggestion-card:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.2);
+        }
+
+        .input-glow:focus {
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        }
+
+        .dot-pulse {
+            animation: dotPulse 1.4s infinite ease-in-out;
+        }
+
+        .dot-pulse:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dot-pulse:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes dotPulse {
             0%, 80%, 100% {
-                transform: scale(0);
+                opacity: 0.3;
+                transform: scale(0.8);
             }
             40% {
-                transform: scale(1);
+                opacity: 1;
+                transform: scale(1.2);
             }
         }
 
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
+        .scrollbar-custom::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        .scrollbar-custom::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .logo-pulse {
+            animation: logoPulse 3s infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
+            }
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100">
+<body class="text-gray-100 gradient-mesh">
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <div id="sidebar" class="w-72 bg-gray-800 border-r border-gray-700 flex flex-col transition-all duration-300">
-            <div class="p-6">
-                <!-- Logo -->
-                <div class="flex items-center gap-3 mb-8">
-                    <div class="w-10 h-10 rounded-lg gradient-bg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <aside id="sidebar" class="w-80 bg-[#1a1a2e] border-r border-white/10 flex flex-col transition-all duration-300 shadow-2xl">
+            <!-- Logo & Brand -->
+            <div class="p-6 border-b border-white/10">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl gradient-purple flex items-center justify-center logo-pulse">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
                         </svg>
                     </div>
                     <div>
-                        <h1 class="text-lg font-bold">LexMoçambique</h1>
-                        <p class="text-xs text-gray-400">Consulta Legal IA</p>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">LexMoçambique</h1>
+                        <p class="text-xs text-gray-500 font-medium">Powered by AI</p>
                     </div>
                 </div>
-
-                <!-- Nova Consulta Button -->
-                <button onclick="newChat()" class="w-full gradient-bg hover:opacity-90 text-white rounded-lg px-4 py-3 flex items-center justify-center gap-2 font-medium transition-all mb-6">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                
+                <!-- New Chat Button -->
+                <button onclick="newChat()" class="w-full mt-6 gradient-purple hover:opacity-90 text-white rounded-xl px-4 py-3.5 flex items-center justify-center gap-2 font-semibold transition-all shadow-lg hover:shadow-purple-500/50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
                     Nova Consulta
                 </button>
+            </div>
 
-                <!-- Histórico Recente -->
-                <div class="space-y-6">
-                    <div>
-                        <h3 class="text-xs font-semibold uppercase tracking-wider mb-3 text-gray-400">
-                            Histórico Recente
-                        </h3>
-                        <div id="historyList" class="space-y-1">
-                            <!-- Histórico será inserido aqui -->
-                        </div>
+            <!-- Navigation & History -->
+            <div class="flex-1 overflow-y-auto scrollbar-custom px-4 py-6">
+                <!-- Recent History -->
+                <div class="mb-8">
+                    <h3 class="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500 px-2">
+                        Recentes
+                    </h3>
+                    <div id="historyList" class="space-y-1">
+                        <!-- Dynamic history items -->
                     </div>
+                </div>
 
-                    <!-- Legislação Base -->
-                    <div>
-                        <h3 class="text-xs font-semibold uppercase tracking-wider mb-3 text-gray-400">
-                            Legislação Base
-                        </h3>
-                        <div class="space-y-1">
-                            <div class="px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer">
-                                <div class="flex items-center gap-2">
-                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                <!-- Laws Library -->
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500 px-2">
+                        Biblioteca Legal
+                    </h3>
+                    <div class="space-y-1">
+                        <div class="sidebar-item px-3 py-2.5 rounded-lg cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>
-                                    <div class="flex-1">
-                                        <p class="text-sm text-gray-300">Código Civil</p>
-                                        <p class="text-xs text-gray-500">Lei 7/2004</p>
-                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-200">Código Civil</p>
+                                    <p class="text-xs text-gray-500">Lei 7/2004</p>
                                 </div>
                             </div>
-                            <div class="px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer">
-                                <div class="flex items-center gap-2">
-                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        </div>
+                        <div class="sidebar-item px-3 py-2.5 rounded-lg cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                                     </svg>
-                                    <div class="flex-1">
-                                        <p class="text-sm text-gray-300">Código Penal</p>
-                                        <p class="text-xs text-gray-500">Lei 24/2019</p>
-                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-200">Código Penal</p>
+                                    <p class="text-xs text-gray-500">Lei 24/2019</p>
                                 </div>
                             </div>
-                            <div class="px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer">
-                                <div class="flex items-center gap-2">
-                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </div>
+                        <div class="sidebar-item px-3 py-2.5 rounded-lg cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
                                     </svg>
-                                    <div class="flex-1">
-                                        <p class="text-sm text-gray-300">Constituição</p>
-                                        <p class="text-xs text-gray-500">2004</p>
-                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-200">Constituição</p>
+                                    <p class="text-xs text-gray-500">2004</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sidebar-item px-3 py-2.5 rounded-lg cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-200">Lei do Trabalho</p>
+                                    <p class="text-xs text-gray-500">Lei 23/2007</p>
                                 </div>
                             </div>
                         </div>
@@ -147,116 +242,151 @@
                 </div>
             </div>
 
-            <!-- Configurações -->
-            <div class="mt-auto p-6 border-t border-gray-700">
-                <button class="w-full px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2 text-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                    Configurações
-                </button>
+            <!-- Footer Stats -->
+            <div class="p-4 border-t border-white/10">
+                <div class="glass-effect rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-gray-400">Base de Dados</span>
+                        <span class="text-xs font-bold text-purple-400">48 Leis</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-400">Consultas</span>
+                        <span class="text-xs font-bold text-indigo-400" id="queryCount">0</span>
+                    </div>
+                </div>
             </div>
-        </div>
+        </aside>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col">
+        <main class="flex-1 flex flex-col bg-[#0f0f23]">
             <!-- Header -->
-            <div class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-gray-700">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        </svg>
-                    </button>
-                    <div>
-                        <h2 class="font-semibold text-lg">Consulta de Leis de Moçambique</h2>
-                        <p class="text-sm text-gray-400">Assistente jurídico com IA</p>
+            <header class="bg-[#1a1a2e]/50 backdrop-blur-xl border-b border-white/10 px-8 py-5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-white/5 transition-colors">
+                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                        </button>
+                        <div>
+                            <h2 class="text-xl font-bold text-white">Assistente Legal IA</h2>
+                            <p class="text-sm text-gray-500">Consulta a legislação moçambicana</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="px-4 py-2 rounded-full glass-effect">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                                <span class="text-xs font-medium text-gray-300">Online</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </header>
 
             <!-- Chat Area -->
-            <div id="chatArea" class="flex-1 overflow-y-auto px-6 py-8 scrollbar-hide">
+            <div id="chatArea" class="flex-1 overflow-y-auto scrollbar-custom px-8 py-8">
                 <!-- Welcome Screen -->
-                <div id="welcomeScreen" class="max-w-3xl mx-auto text-center py-20">
-                    <div class="w-20 h-20 rounded-full gradient-bg flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
-                        </svg>
+                <div id="welcomeScreen" class="max-w-4xl mx-auto py-16">
+                    <div class="text-center mb-12">
+                        <div class="inline-block p-6 rounded-2xl gradient-purple mb-6 logo-pulse">
+                            <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+                            </svg>
+                        </div>
+                        <h1 class="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent">
+                            Como posso ajudar hoje?
+                        </h1>
+                        <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+                            Tenho acesso a 48 leis moçambicanas. Faça qualquer pergunta sobre a legislação e receba respostas precisas com citações.
+                        </p>
                     </div>
-                    <h3 class="text-2xl font-bold mb-3">Bem-vindo ao LexMoçambique</h3>
-                    <p class="text-gray-400 mb-8 max-w-xl mx-auto">
-                        Faça perguntas sobre a legislação moçambicana e obtenha respostas precisas baseadas em IA e na nossa base de dados legal com 48 leis indexadas.
-                    </p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-                        <button onclick="setQuery('Quais são os direitos do trabalhador?')" class="p-4 rounded-xl bg-gray-800 hover:bg-gray-750 border border-gray-700 text-left transition-all hover:scale-105">
-                            <svg class="w-5 h-5 text-purple-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                            </svg>
-                            <p class="text-sm font-medium">Direitos do trabalhador</p>
+
+                    <!-- Suggestion Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+                        <button onclick="setQuery('Quais são os direitos fundamentais do trabalhador em Moçambique?')" class="suggestion-card rounded-2xl p-6 text-left group">
+                            <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-4 group-hover:bg-purple-500/20 transition-colors">
+                                <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-white mb-2">Direitos do Trabalhador</h3>
+                            <p class="text-sm text-gray-500">Consulte a legislação laboral moçambicana</p>
                         </button>
-                        <button onclick="setQuery('Como funciona o divórcio em Moçambique?')" class="p-4 rounded-xl bg-gray-800 hover:bg-gray-750 border border-gray-700 text-left transition-all hover:scale-105">
-                            <svg class="w-5 h-5 text-blue-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                            <p class="text-sm font-medium">Divórcio e família</p>
+
+                        <button onclick="setQuery('Como funciona o processo de divórcio segundo a lei moçambicana?')" class="suggestion-card rounded-2xl p-6 text-left group">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-4 group-hover:bg-indigo-500/20 transition-colors">
+                                <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-white mb-2">Direito de Família</h3>
+                            <p class="text-sm text-gray-500">Informações sobre divórcio e casamento</p>
                         </button>
-                        <button onclick="setQuery('Qual é o regime de propriedade em Moçambique?')" class="p-4 rounded-xl bg-gray-800 hover:bg-gray-750 border border-gray-700 text-left transition-all hover:scale-105">
-                            <svg class="w-5 h-5 text-indigo-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                            </svg>
-                            <p class="text-sm font-medium">Regime de propriedade</p>
+
+                        <button onclick="setQuery('Quais são as regras sobre propriedade e posse de terras?')" class="suggestion-card rounded-2xl p-6 text-left group">
+                            <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
+                                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-white mb-2">Propriedade & Terras</h3>
+                            <p class="text-sm text-gray-500">Lei de terras e regime de propriedade</p>
                         </button>
-                        <button onclick="setQuery('Como funciona o processo judicial?')" class="p-4 rounded-xl bg-gray-800 hover:bg-gray-750 border border-gray-700 text-left transition-all hover:scale-105">
-                            <svg class="w-5 h-5 text-violet-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                            </svg>
-                            <p class="text-sm font-medium">Processo judicial</p>
+
+                        <button onclick="setQuery('Como funciona o processo criminal em Moçambique?')" class="suggestion-card rounded-2xl p-6 text-left group">
+                            <div class="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center mb-4 group-hover:bg-violet-500/20 transition-colors">
+                                <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-white mb-2">Processo Criminal</h3>
+                            <p class="text-sm text-gray-500">Código de processo penal e direitos</p>
                         </button>
                     </div>
                 </div>
 
                 <!-- Messages Container -->
-                <div id="messagesContainer" class="max-w-3xl mx-auto space-y-6 hidden">
-                    <!-- Mensagens serão inseridas aqui -->
+                <div id="messagesContainer" class="max-w-4xl mx-auto space-y-6 hidden">
+                    <!-- Messages appear here -->
                 </div>
             </div>
 
             <!-- Input Area -->
-            <div class="bg-gray-800 border-t border-gray-700 px-6 py-4">
-                <div class="max-w-3xl mx-auto">
-                    <div class="flex gap-3 p-2 rounded-2xl bg-gray-900">
+            <div class="bg-[#1a1a2e]/50 backdrop-blur-xl border-t border-white/10 px-8 py-6">
+                <div class="max-w-4xl mx-auto">
+                    <div class="glass-effect rounded-2xl p-2 flex gap-3">
                         <input
                             type="text"
                             id="queryInput"
-                            placeholder="Pergunte sobre qualquer legislação moçambicana..."
-                            class="flex-1 bg-transparent px-4 py-3 focus:outline-none text-white placeholder-gray-500"
+                            placeholder="Faça sua pergunta sobre a legislação moçambicana..."
+                            class="flex-1 bg-transparent px-6 py-4 focus:outline-none text-white placeholder-gray-500 input-glow rounded-xl transition-all"
                             onkeypress="if(event.key === 'Enter') askQuestion()"
                         />
-                        <button onclick="askQuestion()" id="sendBtn" class="gradient-bg hover:opacity-90 text-white rounded-xl px-6 py-3 flex items-center gap-2 font-medium transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button onclick="askQuestion()" id="sendBtn" class="gradient-purple hover:opacity-90 text-white rounded-xl px-8 py-4 flex items-center gap-2 font-semibold transition-all shadow-lg hover:shadow-purple-500/50">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                             </svg>
                             Enviar
                         </button>
                     </div>
-                    <p class="text-xs text-center mt-2 text-gray-500">
-                        As respostas são geradas por IA com base em 48 leis moçambicanas. Verifique com um profissional legal para casos específicos.
+                    <p class="text-xs text-center mt-4 text-gray-500">
+                        💡 Respostas baseadas em IA com 48 leis indexadas. Para casos específicos, consulte um advogado.
                     </p>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <script>
         let chatHistory = [];
         let searchHistory = [];
+        let queryCount = 0;
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('w-0');
-            sidebar.classList.toggle('w-72');
+            sidebar.classList.toggle('w-80');
         }
 
         function newChat() {
@@ -273,27 +403,25 @@
         }
 
         function addToHistory(query) {
-            const now = new Date();
             const timeAgo = 'Agora';
             searchHistory.unshift({ query, time: timeAgo });
-            if (searchHistory.length > 5) searchHistory.pop();
-            
+            if (searchHistory.length > 10) searchHistory.pop();
             updateHistoryUI();
         }
 
         function updateHistoryUI() {
             const historyList = document.getElementById('historyList');
             historyList.innerHTML = searchHistory.map(item => `
-                <button onclick="setQuery('${item.query.replace(/'/g, "\\'")}')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors group">
-                    <div class="flex items-start gap-2">
-                        <svg class="w-4 h-4 mt-0.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                <button onclick="setQuery('${item.query.replace(/'/g, "\\'")}')" class="sidebar-item w-full text-left px-3 py-2.5 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-4 h-4 mt-0.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
                         </svg>
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm truncate text-gray-300 group-hover:text-white">
+                            <p class="text-sm text-gray-300 truncate font-medium">
                                 ${item.query}
                             </p>
-                            <p class="text-xs text-gray-500">
+                            <p class="text-xs text-gray-600 mt-0.5">
                                 ${item.time}
                             </p>
                         </div>
@@ -308,26 +436,26 @@
             container.classList.remove('hidden');
 
             const messageDiv = document.createElement('div');
-            messageDiv.className = `flex gap-4 chat-message ${type === 'user' ? 'justify-end' : 'justify-start'}`;
+            messageDiv.className = `flex gap-4 message-appear ${type === 'user' ? 'justify-end' : 'justify-start'}`;
 
             const timestamp = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
 
             if (type === 'ai') {
                 messageDiv.innerHTML = `
-                    <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center flex-shrink-0">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+                    <div class="w-10 h-10 rounded-xl gradient-purple flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                         </svg>
                     </div>
                     <div class="max-w-2xl">
-                        <div class="rounded-2xl px-5 py-3 bg-gray-800 border border-gray-700">
-                            <p class="text-sm leading-relaxed whitespace-pre-line">${content}</p>
+                        <div class="chat-bubble-ai rounded-2xl px-6 py-4">
+                            <p class="text-sm leading-relaxed whitespace-pre-line text-gray-200">${content}</p>
                             ${sources ? `
-                                <div class="mt-3 pt-3 border-t border-gray-700">
-                                    <p class="text-xs font-semibold mb-2 text-gray-400">Fontes:</p>
+                                <div class="mt-4 pt-4 border-t border-white/10">
+                                    <p class="text-xs font-semibold mb-3 text-gray-400 uppercase tracking-wide">📚 Fontes Legais:</p>
                                     <div class="flex flex-wrap gap-2">
                                         ${sources.map(source => `
-                                            <span class="text-xs px-2 py-1 rounded-full bg-gray-700 text-gray-300">
+                                            <span class="text-xs px-3 py-1.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-medium">
                                                 ${source}
                                             </span>
                                         `).join('')}
@@ -335,19 +463,31 @@
                                 </div>
                             ` : ''}
                         </div>
-                        <p class="text-xs mt-1 text-gray-500">${timestamp}</p>
+                        <p class="text-xs mt-2 text-gray-600 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            ${timestamp}
+                        </p>
                     </div>
                 `;
             } else {
                 messageDiv.innerHTML = `
                     <div class="max-w-2xl order-1">
-                        <div class="rounded-2xl px-5 py-3 gradient-bg text-white">
-                            <p class="text-sm leading-relaxed">${content}</p>
+                        <div class="chat-bubble-user rounded-2xl px-6 py-4 text-white">
+                            <p class="text-sm leading-relaxed font-medium">${content}</p>
                         </div>
-                        <p class="text-xs mt-1 text-right text-gray-500">${timestamp}</p>
+                        <p class="text-xs mt-2 text-right text-gray-600 flex items-center gap-1 justify-end">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            ${timestamp}
+                        </p>
                     </div>
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center flex-shrink-0 order-2">
-                        <span class="text-xs font-bold text-white">U</span>
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center flex-shrink-0 order-2 shadow-lg border border-white/10">
+                        <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
                     </div>
                 `;
             }
@@ -360,18 +500,19 @@
             const container = document.getElementById('messagesContainer');
             const loadingDiv = document.createElement('div');
             loadingDiv.id = 'loadingMessage';
-            loadingDiv.className = 'flex gap-4 chat-message';
+            loadingDiv.className = 'flex gap-4 message-appear';
             loadingDiv.innerHTML = `
-                <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center flex-shrink-0">
-                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+                <div class="w-10 h-10 rounded-xl gradient-purple flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
                 </div>
-                <div class="rounded-2xl px-5 py-3 bg-gray-800 border border-gray-700">
-                    <div class="flex gap-2 loading-dots">
-                        <span class="w-2 h-2 rounded-full bg-gray-500"></span>
-                        <span class="w-2 h-2 rounded-full bg-gray-500"></span>
-                        <span class="w-2 h-2 rounded-full bg-gray-500"></span>
+                <div class="chat-bubble-ai rounded-2xl px-6 py-4">
+                    <div class="flex gap-2 items-center">
+                        <span class="w-2 h-2 rounded-full bg-purple-400 dot-pulse"></span>
+                        <span class="w-2 h-2 rounded-full bg-purple-400 dot-pulse"></span>
+                        <span class="w-2 h-2 rounded-full bg-purple-400 dot-pulse"></span>
+                        <span class="text-xs text-gray-500 ml-2">Analisando legislação...</span>
                     </div>
                 </div>
             `;
@@ -389,6 +530,10 @@
             const question = input.value.trim();
             
             if (!question) return;
+
+            // Update query count
+            queryCount++;
+            document.getElementById('queryCount').textContent = queryCount;
 
             addMessage('user', question);
             addToHistory(question);
@@ -409,20 +554,19 @@
                 removeLoadingMessage();
 
                 if (response.ok) {
-                    // Extrair fontes da resposta se houver
-                    const sources = data.chunks ? data.chunks.map(chunk => chunk.lei).slice(0, 3) : null;
+                    const sources = data.chunks ? [...new Set(data.chunks.map(chunk => chunk.lei))].slice(0, 3) : null;
                     addMessage('ai', data.resposta, sources);
                 } else {
-                    addMessage('ai', 'Desculpe, ocorreu um erro ao processar sua pergunta. Por favor, tente novamente.');
+                    addMessage('ai', '❌ Desculpe, ocorreu um erro ao processar sua pergunta. Por favor, tente novamente.');
                 }
             } catch (error) {
                 removeLoadingMessage();
-                addMessage('ai', 'Erro de conexão. Verifique se o servidor está funcionando.');
+                addMessage('ai', '⚠️ Erro de conexão. Verifique se o servidor está funcionando e tente novamente.');
                 console.error('Erro:', error);
             }
         }
 
-        // Carregar histórico ao iniciar
+        // Initialize on load
         window.addEventListener('load', () => {
             document.getElementById('queryInput').focus();
         });
