@@ -379,10 +379,280 @@
     </div>
 
     <script>
-        let chatHistory = [];
-        let searchHistory = [];
+        // ===== CONSTANTES E CONFIGURAÇÕES =====
+        const STORAGE_KEY = 'lexmz_sessions';
+        const MAX_MESSAGES_PER_CHAT = 25;
+        const WARNING_THRESHOLD = 20;
+        const MAX_SESSIONS_STORED = 50;
+
+        // ===== ESTADO GLOBAL =====
+        let currentSessionId = null;
         let queryCount = 0;
 
+        // ===== GERENCIAMENTO DE LOCALSTORAGE =====
+        function initializeStorage() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (!data) {
+                const initialData = {
+                    version: "1.0",
+                    sessions: [],
+                    statistics: {
+                        total_queries: 0,
+                        total_sessions: 0,
+                        first_use: new Date().toISOString(),
+                        last_use: new Date().toISOString()
+                    }
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(initialData));
+            }
+        }
+
+        function getStorageData() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : null;
+        }
+
+        function saveStorageData(data) {
+            // Auto-limpeza: manter apenas últimas 50 sessões
+            if (data.sessions.length > MAX_SESSIONS_STORED) {
+                data.sessions = data.sessions
+                    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+                    .slice(0, MAX_SESSIONS_STORED);
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        // ===== GERENCIAMENTO DE SESSÕES =====
+        function generateSessionId() {
+            const now = new Date();
+            const timestamp = now.getTime();
+            const random = Math.random().toString(36).substring(2, 9);
+            return `sess_${timestamp}_${random}`;
+        }
+
+        function createNewSession() {
+            const sessionId = generateSessionId();
+            const data = getStorageData();
+            
+            // Desativar todas as outras sessões
+            data.sessions.forEach(s => s.is_active = false);
+            
+            const newSession = {
+                id: sessionId,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                title: "Nova consulta",
+                is_active: true,
+                message_count: 0,
+                messages: [],
+                metadata: {
+                    topics: [],
+                    laws_referenced: [],
+                    modes_used: []
+                }
+            };
+            
+            data.sessions.unshift(newSession);
+            data.statistics.total_sessions++;
+            data.statistics.last_use = new Date().toISOString();
+            
+            saveStorageData(data);
+            currentSessionId = sessionId;
+            
+            return sessionId;
+        }
+
+        function getCurrentSession() {
+            const data = getStorageData();
+            return data.sessions.find(s => s.id === currentSessionId);
+        }
+
+        function addMessageToSession(role, content, metadata = {}) {
+            const data = getStorageData();
+            const session = data.sessions.find(s => s.id === currentSessionId);
+            
+            if (!session) return;
+            
+            const message = {
+                id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                timestamp: new Date().toISOString(),
+                role: role,
+                content: content,
+                ...metadata
+            };
+            
+            session.messages.push(message);
+            session.message_count++;
+            session.updated_at = new Date().toISOString();
+            
+            // Gerar título automático após 3 mensagens
+            if (session.message_count === 3 && session.title === "Nova consulta") {
+                session.title = generateSessionTitle(session.messages);
+            }
+            
+            // Atualizar estatísticas
+            if (role === 'user') {
+                data.statistics.total_queries++;
+            }
+            
+            saveStorageData(data);
+            updateHistoryUI();
+        }
+
+        function generateSessionTitle(messages) {
+            // Pegar a primeira pergunta do usuário
+            const firstUserMessage = messages.find(m => m.role === 'user');
+            if (!firstUserMessage) return "Nova consulta";
+            
+            let title = firstUserMessage.content.substring(0, 50);
+            if (firstUserMessage.content.length > 50) {
+                title += '...';
+            }
+            
+            return title;
+        }
+
+        function loadSession(sessionId) {
+            const data = getStorageData();
+            const session = data.sessions.find(s => s.id === sessionId);
+            
+            if (!session) return;
+            
+            // Desativar todas as sessões
+            data.sessions.forEach(s => s.is_active = false);
+            
+            // Ativar sessão selecionada
+            session.is_active = true;
+            saveStorageData(data);
+            
+            currentSessionId = sessionId;
+            
+            // Limpar UI e recriar mensagens
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = '';
+            
+            if (session.messages.length === 0) {
+                document.getElementById('welcomeScreen').classList.remove('hidden');
+                container.classList.add('hidden');
+            } else {
+                document.getElementById('welcomeScreen').classList.add('hidden');
+                container.classList.remove('hidden');
+                
+                session.messages.forEach(msg => {
+                    if (msg.role === 'user') {
+                        addMessageToUI('user', msg.content);
+                    } else {
+                        addMessageToUI('ai', msg.content, msg.sources || null);
+                    }
+                });
+            }
+            
+            updateHistoryUI();
+            document.getElementById('queryInput').focus();
+        }
+
+        // ===== INTERFACE DO HISTÓRICO =====
+        function updateHistoryUI() {
+            const data = getStorageData();
+            const historyList = document.getElementById('historyList');
+            
+            if (!data || data.sessions.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center py-8 px-4">
+                        <svg class="w-12 h-12 mx-auto text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                        </svg>
+                        <p class="text-sm text-gray-500">Nenhuma conversa ainda</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Agrupar por data
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            const todaySessions = [];
+            const yesterdaySessions = [];
+            const olderSessions = [];
+            
+            data.sessions.forEach(session => {
+                const sessionDate = new Date(session.updated_at);
+                if (isSameDay(sessionDate, today)) {
+                    todaySessions.push(session);
+                } else if (isSameDay(sessionDate, yesterday)) {
+                    yesterdaySessions.push(session);
+                } else {
+                    olderSessions.push(session);
+                }
+            });
+            
+            let html = '';
+            
+            if (todaySessions.length > 0) {
+                html += '<div class="mb-6"><h3 class="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500 px-2">Hoje</h3>';
+                html += renderSessionGroup(todaySessions);
+                html += '</div>';
+            }
+            
+            if (yesterdaySessions.length > 0) {
+                html += '<div class="mb-6"><h3 class="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500 px-2">Ontem</h3>';
+                html += renderSessionGroup(yesterdaySessions);
+                html += '</div>';
+            }
+            
+            if (olderSessions.length > 0) {
+                html += '<div class="mb-6"><h3 class="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500 px-2">Anteriores</h3>';
+                html += renderSessionGroup(olderSessions.slice(0, 10));
+                html += '</div>';
+            }
+            
+            historyList.innerHTML = html;
+        }
+
+        function renderSessionGroup(sessions) {
+            return sessions.map(session => {
+                const isActive = session.is_active;
+                const time = new Date(session.updated_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+                
+                return `
+                    <button 
+                        onclick="loadSession('${session.id}')" 
+                        class="sidebar-item w-full text-left px-3 py-2.5 rounded-lg mb-1 ${isActive ? 'bg-purple-500/10 border border-purple-500/20' : ''}"
+                    >
+                        <div class="flex items-start gap-3">
+                            ${isActive ? 
+                                '<div class="w-2 h-2 rounded-full bg-green-400 animate-pulse mt-1.5 flex-shrink-0"></div>' :
+                                '<svg class="w-4 h-4 mt-0.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>'
+                            }
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm ${isActive ? 'text-white font-semibold' : 'text-gray-300 font-medium'} truncate">
+                                    ${escapeHtml(session.title)}
+                                </p>
+                                <p class="text-xs text-gray-600 mt-0.5">
+                                    ${time} • ${session.message_count} msg${session.message_count !== 1 ? 's' : ''}
+                                </p>
+                            </div>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function isSameDay(date1, date2) {
+            return date1.getFullYear() === date2.getFullYear() &&
+                   date1.getMonth() === date2.getMonth() &&
+                   date1.getDate() === date2.getDate();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ===== CONTROLES DA UI =====
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('w-0');
@@ -390,11 +660,16 @@
         }
 
         function newChat() {
-            chatHistory = [];
+            createNewSession();
             document.getElementById('messagesContainer').innerHTML = '';
             document.getElementById('messagesContainer').classList.add('hidden');
             document.getElementById('welcomeScreen').classList.remove('hidden');
             document.getElementById('queryInput').value = '';
+            updateHistoryUI();
+            
+            // Remover avisos se existirem
+            const warningBanner = document.getElementById('warningBanner');
+            if (warningBanner) warningBanner.remove();
         }
 
         function setQuery(text) {
@@ -402,33 +677,6 @@
             document.getElementById('queryInput').focus();
         }
 
-        function addToHistory(query) {
-            const timeAgo = 'Agora';
-            searchHistory.unshift({ query, time: timeAgo });
-            if (searchHistory.length > 10) searchHistory.pop();
-            updateHistoryUI();
-        }
-
-        function updateHistoryUI() {
-            const historyList = document.getElementById('historyList');
-            historyList.innerHTML = searchHistory.map(item => `
-                <button onclick="setQuery('${item.query.replace(/'/g, "\\'")}')" class="sidebar-item w-full text-left px-3 py-2.5 rounded-lg">
-                    <div class="flex items-start gap-3">
-                        <svg class="w-4 h-4 mt-0.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                        </svg>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm text-gray-300 truncate font-medium">
-                                ${item.query}
-                            </p>
-                            <p class="text-xs text-gray-600 mt-0.5">
-                                ${item.time}
-                            </p>
-                        </div>
-                    </div>
-                </button>
-            `).join('');
-        }
 
         function scrollToBottom() {
             const chatArea = document.getElementById('chatArea');
@@ -438,7 +686,68 @@
             });
         }
 
-        function addMessage(type, content, sources = null) {
+        function checkChatLimit() {
+            const session = getCurrentSession();
+            if (!session) return true;
+            
+            const messageCount = session.message_count;
+            
+            if (messageCount >= MAX_MESSAGES_PER_CHAT) {
+                showLimitReachedBanner();
+                return false;
+            } else if (messageCount >= WARNING_THRESHOLD) {
+                showWarningBanner();
+            }
+            return true;
+        }
+
+        function showWarningBanner() {
+            const existing = document.getElementById('warningBanner');
+            if (existing) return;
+            
+            const banner = document.createElement('div');
+            banner.id = 'warningBanner';
+            banner.className = 'fixed top-4 right-4 bg-yellow-500/20 border border-yellow-500/30 rounded-xl p-4 backdrop-blur-xl z-50 message-appear max-w-md';
+            banner.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-yellow-300">Conversa longa detectada</p>
+                        <p class="text-xs text-yellow-400/80 mt-1">Considere iniciar um novo chat para melhor performance</p>
+                    </div>
+                    <button onclick="newChat()" class="text-xs bg-yellow-500/20 hover:bg-yellow-500/30 px-3 py-1.5 rounded-lg text-yellow-300 font-medium transition-all flex-shrink-0">
+                        Novo Chat
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(banner);
+        }
+
+        function showLimitReachedBanner() {
+            const banner = document.createElement('div');
+            banner.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center message-appear';
+            banner.innerHTML = `
+                <div class="glass-effect rounded-2xl p-8 max-w-md mx-4">
+                    <div class="text-center">
+                        <div class="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Limite de Mensagens Atingido</h3>
+                        <p class="text-gray-400 mb-6">Esta conversa atingiu ${MAX_MESSAGES_PER_CHAT} mensagens. Para garantir melhor performance, inicie um novo chat para continuar.</p>
+                        <button onclick="newChat(); this.closest('.fixed').remove();" class="w-full gradient-purple text-white rounded-xl px-6 py-3 font-semibold hover:opacity-90 transition-all">
+                            Iniciar Novo Chat
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(banner);
+        }
+
+        function addMessageToUI(type, content, sources = null) {
             const container = document.getElementById('messagesContainer');
             document.getElementById('welcomeScreen').classList.add('hidden');
             container.classList.remove('hidden');
@@ -457,14 +766,14 @@
                     </div>
                     <div class="max-w-2xl">
                         <div class="chat-bubble-ai rounded-2xl px-6 py-4">
-                            <p class="text-sm leading-relaxed whitespace-pre-line text-gray-200">${content}</p>
+                            <p class="text-sm leading-relaxed whitespace-pre-line text-gray-200">${escapeHtml(content)}</p>
                             ${sources ? `
                                 <div class="mt-4 pt-4 border-t border-white/10">
                                     <p class="text-xs font-semibold mb-3 text-gray-400 uppercase tracking-wide">📚 Fontes Legais:</p>
                                     <div class="flex flex-wrap gap-2">
                                         ${sources.map(source => `
                                             <span class="text-xs px-3 py-1.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-medium">
-                                                ${source}
+                                                ${escapeHtml(source)}
                                             </span>
                                         `).join('')}
                                     </div>
@@ -483,7 +792,7 @@
                 messageDiv.innerHTML = `
                     <div class="max-w-2xl order-1">
                         <div class="chat-bubble-user rounded-2xl px-6 py-4 text-white">
-                            <p class="text-sm leading-relaxed font-medium">${content}</p>
+                            <p class="text-sm leading-relaxed font-medium">${escapeHtml(content)}</p>
                         </div>
                         <p class="text-xs mt-2 text-right text-gray-600 flex items-center gap-1 justify-end">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -543,45 +852,102 @@
             
             if (!question) return;
 
-            // Update query count
-            queryCount++;
+            // Verificar limite antes de enviar
+            if (!checkChatLimit()) {
+                input.value = '';
+                return;
+            }
+
+            // Criar sessão se não existir
+            if (!currentSessionId) {
+                createNewSession();
+            }
+
+            // Atualizar estatísticas
+            const data = getStorageData();
+            data.statistics.total_queries++;
+            data.statistics.last_use = new Date().toISOString();
+            saveStorageData(data);
+            
+            queryCount = data.statistics.total_queries;
             document.getElementById('queryCount').textContent = queryCount;
 
-            addMessage('user', question);
-            addToHistory(question);
-            input.value = '';
+            // Adicionar mensagem do usuário à UI e ao storage
+            addMessageToUI('user', question);
+            addMessageToSession('user', question);
             
+            input.value = '';
             addLoadingMessage();
 
             try {
+                // Obter contexto da sessão para enviar ao backend
+                const session = getCurrentSession();
+                const context = session.messages.slice(-5).map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                }));
+
                 const response = await fetch('/perguntar-rag', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ pergunta: question })
+                    body: JSON.stringify({ 
+                        pergunta: question,
+                        session_id: currentSessionId,
+                        context: context // Enviar contexto para o backend
+                    })
                 });
 
-                const data = await response.json();
+                const responseData = await response.json();
                 removeLoadingMessage();
 
                 if (response.ok) {
-                    const sources = data.chunks ? [...new Set(data.chunks.map(chunk => chunk.lei))].slice(0, 3) : null;
-                    addMessage('ai', data.resposta, sources);
+                    const sources = responseData.chunks ? 
+                        [...new Set(responseData.chunks.map(chunk => chunk.lei))].slice(0, 3) : null;
+                    
+                    addMessageToUI('ai', responseData.resposta, sources);
+                    addMessageToSession('assistant', responseData.resposta, {
+                        sources: sources,
+                        mode: responseData.modo || 'consulta',
+                        chunks_used: responseData.chunks ? responseData.chunks.length : 0
+                    });
                 } else {
-                    addMessage('ai', '❌ Desculpe, ocorreu um erro ao processar sua pergunta. Por favor, tente novamente.');
+                    const errorMsg = '❌ Desculpe, ocorreu um erro ao processar sua pergunta. Por favor, tente novamente.';
+                    addMessageToUI('ai', errorMsg);
+                    addMessageToSession('assistant', errorMsg, { error: true });
                 }
             } catch (error) {
                 removeLoadingMessage();
-                addMessage('ai', '⚠️ Erro de conexão. Verifique se o servidor está funcionando e tente novamente.');
+                const errorMsg = '⚠️ Erro de conexão. Verifique se o servidor está funcionando e tente novamente.';
+                addMessageToUI('ai', errorMsg);
+                addMessageToSession('assistant', errorMsg, { error: true });
                 console.error('Erro:', error);
             }
         }
 
         // Initialize on load
         window.addEventListener('load', () => {
+            initializeStorage();
+            updateHistoryUI();
+            
+            // Carregar sessão ativa se existir
+            const data = getStorageData();
+            const activeSession = data.sessions.find(s => s.is_active);
+            if (activeSession) {
+                loadSession(activeSession.id);
+            }
+            
+            // Atualizar contador de queries
+            queryCount = data.statistics.total_queries;
+            document.getElementById('queryCount').textContent = queryCount;
+            
             document.getElementById('queryInput').focus();
         });
+    </script>
+</body>
+</html>
+```
     </script>
 </body>
 </html>

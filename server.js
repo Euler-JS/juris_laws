@@ -209,7 +209,7 @@ app.get('/lei/:nome', (req, res) => {
 // Rota para perguntas usando RAG com Classificação Inteligente
 app.post('/perguntar-rag', async (req, res) => {
   try {
-    const { pergunta, topK } = req.body;
+    const { pergunta, topK, session_id, context } = req.body;
     
     if (!pergunta) {
       return res.status(400).json({ error: 'Pergunta é obrigatória' });
@@ -218,11 +218,14 @@ app.post('/perguntar-rag', async (req, res) => {
     console.log(`\n${'='.repeat(70)}`);
     console.log(`📥 NOVA PERGUNTA RECEBIDA`);
     console.log(`${'='.repeat(70)}`);
-    console.log(`"${pergunta}"\n`);
+    console.log(`"${pergunta}"`);
+    if (session_id) console.log(`📂 Sessão: ${session_id}`);
+    if (context && context.length > 0) console.log(`🔗 Contexto: ${context.length} mensagens anteriores`);
+    console.log();
 
     // FASE 1: Classificar intenção (Consulta vs Assistência vs Glossário)
     console.log('🎯 FASE 1: Classificando intenção...');
-    const classification = await classifier.classify(pergunta);
+    const classification = await classifier.classify(pergunta, context);
     
     // FASE 2: Buscar chunks mais relevantes no RAG
     const numChunks = topK || (classification.modo === 'assistencia' ? 7 : 5);
@@ -260,7 +263,7 @@ app.post('/perguntar-rag', async (req, res) => {
       const explicacao = await glossary.explainTerm(
         classification.termo_glossario,
         relevantChunks,
-        { pergunta }
+        { pergunta, context }
       );
       
       resultado = {
@@ -285,7 +288,8 @@ app.post('/perguntar-rag', async (req, res) => {
         pergunta,
         classification,
         facts,
-        relevantChunks
+        relevantChunks,
+        context
       );
       
       // Detectar termos técnicos na resposta para sugestões
@@ -300,7 +304,8 @@ app.post('/perguntar-rag', async (req, res) => {
       // Gerar consulta técnica
       resultado = await assistanceGenerator.generateConsulta(
         pergunta,
-        relevantChunks
+        relevantChunks,
+        context
       );
       
       // Detectar termos técnicos na resposta para sugestões
