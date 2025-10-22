@@ -444,19 +444,21 @@ async function start() {
   const stats = ragSystem.getStats();
   const glossaryStats = glossary.getStats();
   
-  app.listen(PORT, () => {
-    console.log(`\n${'='.repeat(70)}`);
-    console.log(`🚀 SERVIDOR ASSISTENTE JURÍDICO MOÇAMBICANO`);
-    console.log(`${'='.repeat(70)}`);
-    console.log(`\n📊 Status do Sistema:`);
-    console.log(`   ✓ ${pdfCache.size} leis carregadas`);
-    console.log(`   ✓ ${stats.totalChunks} chunks indexados no RAG`);
-    console.log(`   ✓ ${glossaryStats.termos_registrados} termos no glossário`);
-    console.log(`   ✓ Classificador de intenção ativo (3 modos)`);
-    console.log(`   ✓ Modo 1: Consulta Técnica 📚`);
-    console.log(`   ✓ Modo 2: Assistência Pessoal 💙`);
-    console.log(`   ✓ Modo 3: Glossário Jurídico 📖`);
-    console.log(`\n🌐 URL: http://localhost:${PORT}`);
+  // Só fazer listen se não estiver em produção (Vercel)
+  if (process.env.VERCEL !== '1') {
+    app.listen(PORT, () => {
+      console.log(`\n${'='.repeat(70)}`);
+      console.log(`🚀 SERVIDOR ASSISTENTE JURÍDICO MOÇAMBICANO`);
+      console.log(`${'='.repeat(70)}`);
+      console.log(`\n📊 Status do Sistema:`);
+      console.log(`   ✓ ${pdfCache.size} leis carregadas`);
+      console.log(`   ✓ ${stats.totalChunks} chunks indexados no RAG`);
+      console.log(`   ✓ ${glossaryStats.termos_registrados} termos no glossário`);
+      console.log(`   ✓ Classificador de intenção ativo (3 modos)`);
+      console.log(`   ✓ Modo 1: Consulta Técnica 📚`);
+      console.log(`   ✓ Modo 2: Assistência Pessoal 💙`);
+      console.log(`   ✓ Modo 3: Glossário Jurídico 📖`);
+      console.log(`\n🌐 URL: http://localhost:${PORT}`);
     console.log(`\n📖 Endpoints disponíveis:`);
     console.log(`   • POST /perguntar-rag 🎯 - Sistema Inteligente (3 modos)`);
     console.log(`        → Detecta automaticamente: Consulta, Assistência ou Glossário`);
@@ -483,7 +485,22 @@ async function start() {
     console.log(`     -H "Content-Type: application/json" \\`);
     console.log(`     -d '{"termo": "regime de bens"}'`);
     console.log(`\n${'='.repeat(70)}\n`);
-  });
+    });
+  } else {
+    // Em produção (Vercel), apenas log
+    console.log('✅ Sistema inicializado para Vercel');
+    console.log(`   ✓ ${pdfCache.size} leis carregadas`);
+    console.log(`   ✓ ${stats.totalChunks} chunks indexados`);
+  }
 }
 
-start().catch(console.error);
+// Para desenvolvimento local
+if (process.env.NODE_ENV !== 'production') {
+  start().catch(console.error);
+} else {
+  // Para Vercel (serverless) - inicializar sem app.listen
+  start().catch(console.error);
+}
+
+// Exportar app para Vercel
+export default app;
