@@ -17,11 +17,22 @@ export class AssistanceGenerator {
    * @param {Array} relevantChunks - Chunks de leis relevantes do RAG
    * @returns {Promise<Object>} Resposta assistencial estruturada
    */
-  async generateAssistance(pergunta, classification, facts, relevantChunks) {
+  async generateAssistance(pergunta, classification, facts, relevantChunks, context = []) {
     // Preparar contexto das leis
     const leisContext = relevantChunks
       .map((chunk, i) => `[LEI ${i + 1}] (${chunk.lei}, similaridade: ${(chunk.similarity * 100).toFixed(0)}%)\n${chunk.text}`)
       .join('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n');
+
+    // Formatar histórico da conversa
+    let conversationHistory = '';
+    if (context && context.length > 0) {
+      conversationHistory = '\n\nHISTÓRICO DA CONVERSA:\n';
+      context.forEach((msg) => {
+        const role = msg.role === 'user' ? 'USUÁRIO' : 'ASSISTENTE';
+        conversationHistory += `${role}: ${msg.content}\n`;
+      });
+      conversationHistory += '\n**IMPORTANTE**: Use este histórico para entender o CONTEXTO completo da situação do usuário. Se a pergunta for uma continuação, mantenha o foco no problema principal discutido anteriormente.\n';
+    }
 
     // Preparar resumo da situação
     const situacaoResumo = facts ? `
@@ -45,6 +56,7 @@ PRINCÍPIOS:
 4. SER MOTIVADOR: Mostre que há esperança e que a lei protege
 5. SER ESPECÍFICO: Cite artigos de lei exatos, calcule valores quando possível
 6. SER COMPLETO: Não deixe a pessoa sem saber o que fazer em seguida
+7. SER CONTEXTUAL: Se houver histórico de conversa, use-o para entender a situação completa
 
 ESTRUTURA OBRIGATÓRIA DA RESPOSTA:
 
@@ -96,19 +108,22 @@ ESTRUTURA OBRIGATÓRIA DA RESPOSTA:
 
 TOM: Empático, humano, prático, encorajador, profissional
 FORMATO: Use emojis, seções claras, listas, destaques
-LINGUAGEM: Simples, acessível, sem juridiquês`;
+LINGUAGEM: Simples, acessível, sem juridiquês
+
+**ATENÇÃO**: Se houver histórico de conversa, a pergunta atual pode ser uma CONTINUAÇÃO do problema anterior. Responda considerando TODO o contexto da conversa.`;
 
     const userPrompt = `${situacaoResumo}
 
 LEIS RELEVANTES QUE PROTEGEM O UTILIZADOR:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${leisContext}
-
-PERGUNTA/SITUAÇÃO DO UTILIZADOR:
+${conversationHistory}
+PERGUNTA/SITUAÇÃO ATUAL DO UTILIZADOR:
 "${pergunta}"
 
 Forneça assistência jurídica completa seguindo TODA a estrutura obrigatória acima.
-Use a data atual: 21 de outubro de 2025 para calcular prazos.`;
+Use a data atual: 22 de outubro de 2025 para calcular prazos.
+Se houver histórico de conversa, considere-o para entender o contexto completo da situação.`;
 
     try {
       console.log('\n💙 Gerando resposta assistencial...');
@@ -150,10 +165,21 @@ Use a data atual: 21 de outubro de 2025 para calcular prazos.`;
    * @param {Array} relevantChunks - Chunks de leis relevantes
    * @returns {Promise<Object>} Resposta técnica
    */
-  async generateConsulta(pergunta, relevantChunks) {
+  async generateConsulta(pergunta, relevantChunks, context = []) {
     const leisContext = relevantChunks
       .map((chunk, i) => `[TRECHO ${i + 1}] (${chunk.lei})\n${chunk.text}`)
       .join('\n\n───────\n\n');
+
+    // Formatar histórico da conversa
+    let conversationHistory = '';
+    if (context && context.length > 0) {
+      conversationHistory = '\n\nHISTÓRICO DA CONVERSA:\n';
+      context.forEach((msg) => {
+        const role = msg.role === 'user' ? 'USUÁRIO' : 'ASSISTENTE';
+        conversationHistory += `${role}: ${msg.content}\n`;
+      });
+      conversationHistory += '\n**IMPORTANTE**: Use este histórico para entender o CONTEXTO da pergunta atual. Se a pergunta for uma continuação (ex: "E se for menor de idade?"), refira-se ao tópico da conversa anterior.\n';
+    }
 
     const systemPrompt = `Você é um assistente jurídico especializado nas leis de Moçambique.
 
@@ -162,20 +188,23 @@ Responda perguntas sobre leis de forma:
 - PRECISA: Cite artigos e leis específicas
 - CLARA: Use linguagem acessível
 - COMPLETA: Não deixe dúvidas
+- CONTEXTUAL: Se houver histórico de conversa, use-o para entender perguntas de seguimento
 
 SEMPRE cite a fonte (Lei e Artigo) ao explicar algo.
-Use o contexto fornecido. NÃO invente informações.`;
+Use o contexto fornecido. NÃO invente informações.
+
+**ATENÇÃO**: Se a pergunta atual for uma continuação da conversa anterior (ex: "E se...", "Se for...", "E no caso de..."), responda considerando o TÓPICO PRINCIPAL da conversa anterior.`;
 
     const userPrompt = `Com base nas leis de Moçambique abaixo, responda a pergunta do usuário.
 
 LEIS RELEVANTES:
 ───────────────────────────────
 ${leisContext}
-
-PERGUNTA:
+${conversationHistory}
+PERGUNTA ATUAL:
 ${pergunta}
 
-Responda de forma clara e objetiva, citando os artigos relevantes.`;
+Responda de forma clara e objetiva, citando os artigos relevantes. Se esta for uma pergunta de seguimento, mantenha o foco no tópico da conversa anterior.`;
 
     try {
       const response = await this.openai.chat.completions.create({

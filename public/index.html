@@ -1464,7 +1464,8 @@
             try {
                 // Obter contexto da sessão para enviar ao backend
                 const session = getCurrentSession();
-                const context = session.messages.slice(-5).map(msg => ({
+                // Enviar últimas 10 mensagens para melhor contexto (5 pares usuário-assistente)
+                const context = session.messages.slice(-10).map(msg => ({
                     role: msg.role,
                     content: msg.content
                 }));

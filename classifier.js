@@ -14,9 +14,21 @@ export class IntentClassifier {
   /**
    * Classifica a intenção do usuário
    * @param {string} pergunta - Pergunta do usuário
+   * @param {Array} context - Histórico de mensagens anteriores
    * @returns {Promise<Object>} { modo: 'consulta'|'assistencia', confianca: number, analise: {...} }
    */
-  async classify(pergunta) {
+  async classify(pergunta, context = []) {
+    // Formatar contexto de mensagens anteriores
+    let contextText = '';
+    if (context && context.length > 0) {
+      contextText = '\n\nCONTEXTO DA CONVERSA (mensagens anteriores):\n';
+      context.forEach((msg, i) => {
+        const role = msg.role === 'user' ? 'USUÁRIO' : 'ASSISTENTE';
+        contextText += `${role}: ${msg.content}\n`;
+      });
+      contextText += '\nUSE ESTE CONTEXTO PARA ENTENDER MELHOR A PERGUNTA ATUAL.\n';
+    }
+
     const prompt = `Você é um classificador de intenções para um sistema jurídico de Moçambique.
 
 Analise a pergunta do usuário e determine:
@@ -53,6 +65,10 @@ Analise a pergunta do usuário e determine:
 6. VULNERABILIDADES (se aplicável):
    - Lista de fatores de vulnerabilidade detectados (ex: ["dependentes_menores", "situacao_financeira"])
 
+**IMPORTANTE**: Se houver CONTEXTO DE CONVERSA, use-o para entender melhor a pergunta atual. Por exemplo:
+- Se a conversa anterior foi sobre "aborto" e a pergunta atual é "Se for menor de idade?", você deve entender que é sobre "aborto em caso de menor de idade".
+- Se a conversa foi sobre "contrato de trabalho" e a pergunta é "E se for verbal?", é sobre "contrato de trabalho verbal".
+
 Responda APENAS em formato JSON válido:
 {
   "modo": "consulta" ou "assistencia" ou "glossario",
@@ -65,15 +81,15 @@ Responda APENAS em formato JSON válido:
   "termo_glossario": "termo que usuário quer explicação" ou null,
   "reasoning": "breve explicação da classificação"
 }
-
-PERGUNTA DO USUÁRIO:
+${contextText}
+PERGUNTA ATUAL DO USUÁRIO:
 "${pergunta}"`;
 
     try {
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'Você é um classificador especializado em detectar intenções em consultas jurídicas.' },
+          { role: 'system', content: 'Você é um classificador especializado em detectar intenções em consultas jurídicas. SEMPRE considere o contexto da conversa anterior para entender perguntas de seguimento.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.1, // Baixa temperatura para respostas consistentes
